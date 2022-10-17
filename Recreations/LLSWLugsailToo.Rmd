@@ -1,0 +1,710 @@
+---
+title: "LLSW Recreate Fig1 Lugsail Version"
+author: "Rebecca Kurtz-Garcia"
+date: "1/12/2022"
+output:
+  html_document:
+    df_print: paged
+header-includes: \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+I am using a lot of what I already did in the previous paper.  Recreating other work I did but incorporating Lugsail 
+
+The graph produced in Lazarus2018 contained lines (asymptotic frontier) and points (simulated data) for various levels of $k$ of their loss function. 
+
+```{=latex}
+\begin{equation}
+  Loss = k (\Delta_s)^2 + (1-k) (\Delta_s^{max})^2
+  \label{eq:LLSW_loss}
+\end{equation}
+```
+
+
+This loss function contains two fundamental values:  size distortion ($\Delta_s$), and size-adjusted power loss  ($\Delta_s^{max}$). The value $k$ is a tuning parameter to balance which component should be emphasized, and is typically set to 0.90. 
+
+Now the scenario used to create this graph was a simple AR(1) model with $T= 200$, and $\rho = 0.70$.
+
+For now we assume that 
+
+- $\alpha = 0.05$
+- $m = 1$
+- Gaussian location model is used: 
+
+$$y_t = \beta + u_t$$
+
+$$u_t \sim AR(1) \text{ with } \rho = 0.7$$
+
+That is, 
+
+$$u_t = u_{t-1}+ e_t$$
+
+where $e_t$ is a white noise process with zero mean. 
+
+- Using Table 2 we see that the optimal $b = 1.3 T^{-1/2}$ for Bartlett/NW kernel. 
+- Recall $b = \frac{M}{T}$ where $M$ is the bandwidth and $T$ is the sample size. 
+- $v = (b\frac{2}{3})^{-1}$ for Bartlett/NW kernel 
+- $g_q = q = 1$ for Bartlett/NW kernel 
+- $g_q = 1.4212$ and $q = 2$ for QS kernel
+- $T = 200$ the sample size 
+- when $m=1$ for an AR(1) process with auto-correlation coefficient $\rho$ we have $w^{(1)} = 2*\rho/(1-\rho^2)$ and $w^{(2)}=2*\rho/(1-rho)^2$
+
+Kernel functions used 
+
+$$\text{Bartlett} = 1 - |x| \text{ for } |x|<1 $$
+
+$$\text{Daniell/EWC} = \frac{\sin(x \pi)}{x\pi} $$
+$$\text{QS} =  \frac{25}{12\pi^2 x^2}\left ( \frac{\sin(6\pi x/5)}{6\pi x/5} -\cos(6\pi x/5)\right ) $$
+
+Properties
+```{=latex}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|}
+    \hline
+      Kernel ($\kappa(x)$) & $\kappa^2(x)$ & $q$ &$g_{q}$ \\
+         \hline 
+         \hline
+        Bartlett & $\frac{2}{3}$&  1 & 1.0000\\
+        Daniell  & 1            &  2 & $\frac{\pi^2}{6}=1.6449$ \\
+        QS       & 1            &  2 & $\frac{18\pi^2}{125}=1.4212$\\
+        \hline 
+    \end{tabular}
+\end{table}
+```
+
+\textcolor{red}{I am only going to concentrate on NW for now.}
+
+## Size Distortion 
+
+We have the theoretical result for $\Delta_s$ from Sun's 2014 "Lets Fix It" paper for kernel estimators, referred to as Sun2014Lets. Which was presented by LLSW in equation (18), 
+
+$$\Delta_s = G_m' (\chi_m^\alpha) \chi_m^\alpha  w^{(q)} g_q (bT)^{-q}$$
+where 
+
+- $G_m$ is the chi-square cdf with $m$ degrees of freedom.
+- $G'_m$ is the corresponding derivative  (or the pdf).
+- $\chi^2_m$ is the $(100)(1-\alpha)$ percentile
+- $w^{(q)} = tr\left (m^{-1} \Sigma_{j = -\infty}^\infty |j|\Gamma_j \Omega ^{-1}\right)$
+- $g_q = \underset{x \rightarrow 0}{lim} \frac{1 - k(x)}{|x|^{q}}<\infty$
+
+We have built-in functions for R for the cdf, pdf, and percentiles, namely the `pchisq()`, `dchisq()` and `qchisq()` functions, respectively. 
+
+The only thing that is really changing here is  $b$. 
+
+```{r}
+# Set up values 
+alpha = 0.05
+m = 1
+Chisq_precentile = qchisq((1-alpha), 1)
+Gprime_m = dchisq(Chisq_precentile, 1) # Basically the pdf at (1-alpha)
+rho = 0.7
+w1 = 2*rho/(1- rho^2)
+big_T = 200    # number of values in data set
+e_sd = 1       # AR correlation matrix with e_sd
+num_sim = 50000
+
+
+# Calculate the size 
+calc_size = function(b, kernel = "NW"){
+  
+  if(kernel == "NW"){
+     g_q = 1
+     q = 1
+     w_q =  2*rho/(1- rho^2)
+  } else if(kernel == "QS"){
+     g_q = (18*pi^2)/125
+     q = 2
+     w_q =  2*rho/(1- rho)^2
+  } else {
+     # Daniells kernel 
+     g_q = (pi^2)/6
+     q = 2
+     w_q =  2*rho/(1- rho)^2
+  }
+  
+  size = Gprime_m*Chisq_precentile*w_q*g_q*(b*big_T)^(-q) 
+  return(size)
+}
+
+# calc_size(seq(.0001, 1, length.out = 20))
+```
+
+
+## Power    
+
+The results for the power loss in equation (20) in LLSW.
+
+```{=latex}
+\begin{equation}
+\Delta_s^{max} = \underset{\delta}{max} \left ( \frac{\delta^2}{2} G'_{m+2, \delta} (\chi^\alpha_m) \chi^\alpha_m \right ) v^{-1}
+\label{eq:max_power_loss}
+\end{equation}
+
+```
+
+
+
+where 
+
+- $\delta = T^{-1/2} \Omega^{-1/2} \Sigma_{xx}^{1/2}\beta$ the non-centrality parameter. 
+- $\Sigma_{xx}$ = the local alternative which is $I_m$ in the location model. 
+- $\beta$ mean vector of the location model
+- $G'_{m+2, \delta^2}$ is the derivative of the cdf of the chi-square distribution with $m+2$ degrees of freedom and non-centrality parameter $\delta$. 
+- $v = \left(b \int_{-\infty}^\infty \kappa^2(x) dx \right)^{-1}$ the "Tukey equivalent degrees of freedom" formula in equation (13) 
+
+
+The size adjusted maximum power loss ($\Delta_s^{max}$) requires a specific $\delta$.  The term "size-adjusted" just means that the tests they compare are of the same significance level.  The term "maximum power loss" is a point in the alternative hypotheses where the "worst-case power loss" occurs.  They deduced this to be at some non-centrality value for $\delta^2$. This is a similar method as described in Sun2014Lets paper in Section 6.  
+
+The Figures' lines are generated using a range of values for $b$, where $b$ is the ratio of the bandwidth ($M$) and the sample size ($T$). 
+
+
+Now we concentrate on power loss. Here is where we have the best $\delta^2$. 
+
+```{r}
+# Calculate power-loss
+calc_power_loss_adjusted = function(delta_sq_attempt){
+  Gprime_m2 = dchisq(Chisq_precentile , (m+2), ncp = delta_sq_attempt)
+  power_loss = delta_sq_attempt*Gprime_m2
+  return(power_loss)
+}
+
+# Use grid search for power_loss
+try_detla_sq = seq(0, 15, by = .01)
+calc_power_loss_adjusted(try_detla_sq[1])
+adjusted_pl = sapply(try_detla_sq, calc_power_loss_adjusted)
+max_delta = which.max(adjusted_pl)
+delta_sq = try_detla_sq[max_delta]
+
+# Plot the results 
+plot(try_detla_sq, adjusted_pl, type = "l", xlab = "Delta^2", 
+     ylab = "Unnormalized Power Loss", 
+     main = "Grid Search for Optimal Delta^2")
+abline(v= delta_sq, col = "blue")
+```
+
+Now that we have $\delta^2$ we  can concentrate on the rest of the formulation for power. 
+
+```{r}
+
+calc_power = function(b, kernel = "NW"){
+
+  if(kernel == "NW"){
+    v = (b*2/3)^(-1)
+  } else {
+    # The kernel squared over the domain is 1 for both QS and Daniells 
+    v = (b*1)^{-1}
+  } 
+  Gprime_m2 = dchisq(Chisq_precentile, (m+2), ncp = delta_sq)
+  power_loss = delta_sq*Gprime_m2*Chisq_precentile*v^(-1)/2
+  return(power_loss)
+}
+```
+
+
+## Put it all together 
+```{r}
+try_b = seq(0.015, 0.45, length.out = 50)
+
+generate_plot_points = function(try_b, kernel = "NW", k = .9){
+  try_power = calc_power(try_b, kernel)
+  try_size = calc_size(try_b, kernel)
+  loss = k*try_size^2 + (1-k)*try_power^2
+  return_me = list(x = try_size, y = try_power, loss = loss)
+  return(return_me)
+}
+# loss = k*try_size^2 + (1-k)*try_power^2
+
+NW = generate_plot_points(try_b, kernel = "NW")
+QS = generate_plot_points(try_b, kernel = "QS")
+Daniell = generate_plot_points(try_b, kernel = "Daniell")
+plot(NW$x, NW$y, type = "l", xlab = "Size", ylab = "Power", 
+     col = "red", lty = 2)
+lines(QS$x, QS$y, lty = 3, col = "green")
+lines(Daniell$x, Daniell$y, lty = 1, col = "blue")
+legend("topright", legend = c("NW", "QS", "EWC"), col = c("red", "green", "blue"), 
+       lty = c(2, 3, 1))
+```
+
+
+# Best Values in Theory
+
+Now I want to try plotting the theoretical best value on the plot which are denoted by stars. So I look Table 2 and pick the best $b$ according to that table and denote it with a diamond, the solutions for this table were apparently derived from equation (22). I did this before and I got the wrong thing, so fingers crossed that it works this time. 
+
+```{r}
+
+plot(NW$x, NW$y, type = "l", xlab = "Size", ylab = "Power", 
+     col = "red", lty = 2)
+lines(QS$x, QS$y, lty = 3, col = "green")
+lines(Daniell$x, Daniell$y, lty = 1, col = "blue")
+legend("topright", legend = c("NW", "QS", "EWC"), col = c("red", "green", "blue"), 
+       lty = c(2, 3, 1))
+
+# The best b according to Table 2 for the NW estimator 
+NW_b = 1.3*big_T^(-1/2)
+NW_best = generate_plot_points(NW_b, kernel = "NW")
+points(NW_best$x, NW_best$y, col = "red", pch = 15)
+
+```
+
+# Adding Iso-Loss Elipses
+```{r}
+
+# Plot the size and power tradeoff 
+plot(NW$x, NW$y, type = "l", xlab = "Size", ylab = "Power", 
+     col = "red", lty = 2)
+lines(QS$x, QS$y, lty = 3, col = "green")
+lines(Daniell$x, Daniell$y, lty = 1, col = "blue")
+legend("topright", legend = c("NW", "QS", "EWC"), 
+       col = c("red", "green", "blue"), 
+       lty = c(2, 3, 1))
+
+# The best b according to Table 2 for the NW estimator 
+NW_b = 1.3*big_T^(-1/2)
+NW_best = generate_plot_points(NW_b, kernel = "NW")
+points(NW_best$x, NW_best$y, col = "red", pch = 15)
+
+
+# Add Iso-Loss Curves when k = .9
+plot_iso_curves = function(loss_match, 
+                           search_size = 200, # Arbitrary for grid search
+                           tolerance = 0.000001,
+                           line_type = 4, 
+                           line_color = "red"){
+  try_size = rep(seq(0, 0.03, length.out = search_size), each=search_size)
+  try_power = rep(seq(0, 0.1, length.out = search_size), times = search_size) 
+  k = .9
+  try_loss = k*try_size^2 + (1-k)*try_power^2
+  index_keep = which(abs(try_loss - loss_match)<tolerance)
+  
+  lines(try_size[index_keep], try_power[index_keep], 
+        lty = line_type, col = line_color)
+}
+
+# For NW best line 
+plot_iso_curves(NW_best$loss)
+
+```
+
+
+# Time for simulation study 
+
+The model is an AR(1) guassian location model described earlier in this document.  From my Oral Exam write up in Section 5 we know that the true LRV of the model is the following 
+
+$$\Sigma = \frac{1}{(1-\rho^2)} \left ( \frac{1+\rho}{1-\rho}\right)  \approx 11.11 $$
+
+
+
+Our first task is to create the data that we want to use for the simulation. Suppose we want `sim_num` total simulations each with $T=200$ observations.  Then we will store the data set into a $200 \times$  `sim_num` array.   
+
+```{r}
+
+# I got a lot of my code from my OralCode2.R document 
+
+# Right now function only handles AR(1) models. 
+
+generate_data = function(rho_y=.7, e_sd=1, big_T=200){
+  # Generate the data.  Initial value is 0
+  sim_data = rep(0, big_T)
+  
+  # The rest of the values
+  for(t in 2:big_T){
+    sim_data[t] = rho_y*sim_data[c(t-1)] + rnorm(1, 0, e_sd)
+  }
+  
+  return(sim_data)
+}
+
+set.seed(62)
+sim_data = replicate(num_sim, generate_data(big_T = big_T))
+orig_sim_data = sim_data
+the_means = colMeans(sim_data)
+sim_data = apply(sim_data, 1, function(row) row - the_means)
+TRUE_LRV = (1/(1-rho^2))*(1+rho)/(1-rho)
+```
+
+After we have created all the simulated data sets for our study, we need to find each auto-covaraince matrix for these data sets.  We can auto-covariance matrices with lag 0, and lag $T-1= 200-1$.  Each row is a different autocovariance from 0 to $T-1$.  Each column is a simulation. 
+
+```{r}
+# sim_data <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/UCR/Dissertation Stuff/WriteUps/uhat_big.csv", header=FALSE)
+# the_means <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/UCR/Dissertation Stuff/WriteUps/bhat_big.csv", header=FALSE)
+
+# Autocovariance Estimate 
+# h = lag 
+# one_sim_data = a vector with one simulation
+R = function(h, one_sim_data){
+  big_T = length(one_sim_data)
+  est_mean = mean(one_sim_data)
+  index = 1:(big_T -h)
+  est = (one_sim_data[index]-est_mean)*(one_sim_data[(index+h)] - est_mean)
+  
+  autocov_s = sum(est)/big_T
+  
+  if(h!=0){
+    autocov_s = 2*autocov_s
+  }
+  
+  return(autocov_s)
+}
+
+
+# Still need to double check that this will handle multivariate data
+# And not just some simple case 
+all_R = function(one_sim_data){
+  big_T = length(one_sim_data)
+  all_auto_cov <- sapply(0:(big_T-1), R, one_sim_data= one_sim_data)
+  return(all_auto_cov)
+}
+
+all_autocovariances <- apply(sim_data, 2, all_R) 
+
+rownames(all_autocovariances) = paste("Lag=", 0:(nrow(sim_data)-1), sep = "")
+colnames(all_autocovariances) = paste("Sim ", 1:(ncol(sim_data)), sep = "")
+```
+
+Now we need to consider making the Bartlett estimators with various values for $b$.  The values for $b$ we will consider are the following. 
+
+```{r}
+try_b = c(199, seq(2, 10, by=2), 13, 15, 16, 19, 20, 
+          24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 70, 80, 90, 100, 111, 120, 130, 140, 150, 19, 5)/200
+try_b = c(try_b,  1.3*big_T^(-1/2))
+          
+          # length.out should be 32 ish 
+try_b = round(try_b, 3)
+
+
+lugsail_parameters = function(method = "zero", q = 1, b){
+  if(method == "zero"){
+    r = 2
+    c = r^(-q)
+  } else if (method == "adaptive"){
+    r = 2
+    c_num = (log(nrow(sim_data)) - log(b) + 1)
+    c_den = r^q*(log(nrow(sim_data)) - log(b)) + 1
+    c = c_num/c_den 
+  } else {
+    r = 4
+    c = 2/(1+ r^q)
+  }
+  lugsail_parameters = list(r, c, method)
+  names(lugsail_parameters) = c("r", "c", "method")
+  return(lugsail_parameters)
+}
+
+the_lugsail_parameters = lugsail_parameters("zero", b = try_b)
+try_b_for_lugsail = try_b/the_lugsail_parameters$r
+try_b_for_lugsail = c(try_b, try_b_for_lugsail)
+index_orig_b = 1:length(try_b)
+```
+
+
+The Bartlett kernel function will be used in conjunction with the auto-covariances to create an estimator.  I will be creating a `length(try_b)` $\times T$ weights matrix, say $W$.  Suppose that my $sim_data$ matrix is $S$.  Then $W \times S$ will result in a `length(try_b)` $\times $ `num_sims`.  The first row and first column will contain the estimated covariance of the the first simulation with the first value in the `try_b` vector.  The entire first column will contain all covariance estimates for the first simulation.  The first row of the resulting vector will have all the estimated covariances with the first value in the `try_b` vector. Further notice that the first column always contains a 1 because the a covariance matrix of lag 0 should not have a penatly term. 
+```{r}
+# Bartlett Kernel Estimator -----------------------------------------------
+bartlett = function(x){
+  if(abs(x)<1){
+    k_x = 1-abs(x)
+  } else{
+    k_x = 0 
+  }
+  return(k_x)
+}
+
+# must have the same number of columns as autocovariance matrices created for each simulation
+# Must have same number of rows as the length of try_b
+W = matrix(0, nrow = length(try_b), ncol = nrow(all_autocovariances))
+
+for(i in 1:length(try_b)){
+  b = try_b[i]
+  M = b*nrow(sim_data)
+  new_weights = sapply(0:(M)/(M+1), bartlett)
+  W[i, 1:length(new_weights)] = new_weights
+}
+rownames(W) = paste("b=", round(try, 3), sep = "")
+colnames(W) = paste("Lag=", 0:(nrow(sim_data)-1), sep = "")
+```
+
+Now we can make estimate our covariance matrices. Again, each row corresponds to a particular value of $b$ and each column corresponds to a simulation. 
+
+```{r}
+
+all_estimated_covaraince = W %*% all_autocovariances
+colnames(all_estimated_covaraince) = paste("Sim", 1:num_sim)
+rownames(all_estimated_covaraince) = paste("b=", round(try_b, 3))
+all_estimated_covaraince_lugsail = all_estimated_covaraince
+all_estimated_covaraince = all_estimated_covaraince[1:length(try_b), ]
+```
+
+Now we get the $F$ statistics under the null hypothesis.  
+
+```{r}
+
+cv_nw_05 <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/UCR/Dissertation Stuff/WriteUps/cv_nw_05.csv", 
+                     header=FALSE)
+colnames(cv_nw_05)<-c("b", paste("m=", 1:c(ncol(cv_nw_05)-1),sep = ""))
+
+
+delta_mat_1_5 = read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/UCR/Dissertation Stuff/WriteUps/delta_mat_15.csv",
+                         header=FALSE)
+colnames(delta_mat_1_5)  = c("dvec", "power_inf")
+
+
+get_size_power = function(the_means, sim_data, all_estimated_covaraince){
+
+  # Set up the stage 
+  the_means= unlist(c(the_means))
+  var_the_means = t(the_means)%*%the_means/length(the_means)
+  var_the_means = chol(var_the_means)
+  inv_var_the_means = solve(var_the_means)
+  scl_the_means = inv_var_the_means %*% the_means
+  inv_all_estimated_covaraince = 1/(c(inv_var_the_means)^2*all_estimated_covaraince)
+
+  # Null hypothesis test statistics 
+  f_null <- apply(inv_all_estimated_covaraince, 1, function(by_b){
+    nrow(sim_data)*c((scl_the_means^2)*by_b)
+  })
+  
+  # For f_null 
+  # Each column is a particular b (first b is first column)
+  # Each row is a simulation
+  
+  index_for_cv = sapply(try_b, function(b){
+    which.min(abs(b- cv_nw_05$b))
+  })
+  
+  # Proportion f_null above critical value for each b 
+  rejectH0 = apply(f_null, 1, function(by_sim) {
+    cv = cv_nw_05[index_for_cv, 2]
+    as.numeric(by_sim > cv)
+  })
+  rownames(rejectH0) = paste("b=", round(try_b, 3))
+  colnames(rejectH0) = paste("Sim", 1:num_sim)
+  size_obs = colMeans(t(rejectH0))
+  size_distortion = size_obs-alpha
+  
+  # Finite value critical value 
+  cv_finite = apply(f_null, 2, quantile, probs= 1-alpha)
+  
+  # Get observed power for each non-centrality paramter & each b 
+  # across all simulations 
+  power_obs <- sapply(delta_mat_1_5$dvec, function(d){
+    f_alt <- apply(inv_all_estimated_covaraince, 1, function(by_b){
+      nrow(sim_data)*c(scl_the_means + d)^2*by_b
+      })
+    power_finite <- apply(f_alt, 1, function(by_sim){
+      as.numeric(by_sim > cv_finite)
+      })
+    rownames(power_finite) = paste("b=", round(try_b, 3))
+    colnames(power_finite) = paste("Sim", 1:num_sim)
+    power_finite= colMeans(t(power_finite))
+    return(power_finite)
+  })
+  colnames(power_obs) = paste("d=", round(delta_mat_1_5$dvec, 3), sep = "")
+  
+  
+  # Caclulate maximum power loss across the different noncentrality terms 
+  # and for the different b values 
+  power_loss = apply(power_obs, 1, function(by_b){
+    max(delta_mat_1_5$power_inf - by_b)
+  })
+  
+  return_me = list(size_distortion = size_distortion, 
+                   power_loss = power_loss)
+  return(return_me)
+}
+
+results = get_size_power(the_means, sim_data, all_estimated_covaraince)
+
+```
+
+
+
+```{r}
+plot(results$size_distortion, results$power_loss)
+```
+
+
+
+```{r}
+
+# Plot the size and power tradeoff 
+plot(NW$x, NW$y, type = "l", xlab = "Size", ylab = "Power", 
+     col = "red", lty = 2)
+lines(QS$x, QS$y, lty = 3, col = "green")
+lines(Daniell$x, Daniell$y, lty = 1, col = "blue")
+legend("topright", legend = c("NW", "QS", "EWC"), 
+       col = c("red", "green", "blue"), 
+       lty = c(2, 3, 1))
+
+# The best b according to Table 2 for the NW estimator 
+NW_b = 1.3*big_T^(-1/2)
+NW_best = generate_plot_points(NW_b, kernel = "NW")
+points(NW_best$x, NW_best$y, col = "red", pch = 15)
+
+
+# Add Iso-Loss Curves when k = .9
+plot_iso_curves = function(loss_match, 
+                           search_size = 200, # Arbitrary for grid search
+                           tolerance = 0.000001,
+                           line_type = 4, 
+                           line_color = "red"){
+  try_size = rep(seq(0, 0.03, length.out = search_size), each=search_size)
+  try_power = rep(seq(0, 0.1, length.out = search_size), times = search_size) 
+  k = .9
+  try_loss = k*try_size^2 + (1-k)*try_power^2
+  index_keep = which(abs(try_loss - loss_match)<tolerance)
+  
+  lines(try_size[index_keep], try_power[index_keep], 
+        lty = line_type, col = line_color)
+}
+
+# For NW best line 
+plot_iso_curves(NW_best$loss)
+
+
+# Plot MCMC points
+points(results$size_distortion, results$power_loss, col = "red")
+points(results$size_distortion[length(try_b)], 
+       results$power_loss[length(try_b)], bg = "red", pch =21, col = "black")
+```
+
+
+# Lugsail Kernel 
+
+```{r}
+
+lugsail_bartlett = function(x, r, c){
+  
+  # Actual lugsail 
+  y1 = bartlett(x)/(1-c) 
+  y2 = 0 
+  
+  if(abs(x) < 1/r){
+    y2 = bartlett(x*r)*c/(1-c) 
+  }
+  y = y1- y2
+  
+  
+  return(y)
+}
+
+
+# The following is for our lugsail estimator 
+# Zero: r = 2, c = r^(-q)
+# must have the same number of columns as autocovariance matrices created for each simulation
+# Must have same number of rows as the length of try_b
+W_lugsail = matrix(0, nrow = length(try_b), ncol = nrow(all_autocovariances))
+
+for(i in 1:length(try_b)){
+  b = try_b[i]
+  M = b*nrow(sim_data)
+  new_weights = sapply(0:(M)/(M+1), lugsail_bartlett, 
+                       r = 2, c = 0.5)
+  W_lugsail[i, 1:length(new_weights)] = new_weights
+}
+rownames(W_lugsail) = paste("b=", round(try, 3), sep = "")
+colnames(W_lugsail) = paste("Lag=", 0:(nrow(sim_data)-1), sep = "")
+
+
+
+all_estimated_covaraince_lugsail  = W_lugsail%*% all_autocovariances
+colnames(all_estimated_lugsail) = paste("Sim", 1:num_sim)
+rownames(all_estimated_lugsail) = paste("b=", round(try_b, 3))
+
+results_lugsail = get_size_power(the_means, sim_data, all_estimated_lugsail)
+```
+
+
+
+```{r}
+# # Plot MCMC points
+plot(results$size_distortion, results$power_loss, col = "red", 
+     xlim = range(c(results_lugsail$size_distortion, 
+               results$size_distortion)), 
+     ylim = range(c(results_lugsail$power_loss, 
+             results$power_loss)))
+points(results$size_distortion[length(try_b)],
+       results$power_loss[length(try_b)], bg = "red", pch =21, col = "black")
+
+
+points(results_lugsail$size_distortion, results_lugsail$power_loss, col = "purple",
+       pch = 1)
+points(results_lugsail$size_distortion[length(try_b)],
+       results_lugsail$power_loss[length(try_b)], bg = "purple", pch =21, col = "black")
+
+for(i in 1:length(try_b)){
+  lines(x = c(results$size_distortion[i],
+              results_lugsail$size_distortion[i]),
+        y = c(results$power_loss[i],
+              results_lugsail$power_loss[i]),
+        col = "lightgrey")
+}
+
+  lines(x = c(results$size_distortion[length(try_b)],
+              results_lugsail$size_distortion[length(try_b)]),
+        y = c(results$power_loss[length(try_b)],
+              results_lugsail$power_loss[length(try_b)]),
+        col = "black")
+```
+
+```{r}
+
+# Plot the size and power tradeoff 
+plot(NW$x, NW$y, type = "l", xlab = "Size", ylab = "Power", 
+     col = "red", lty = 2, xaxt = "n", 
+     xlim = range(c(results$size_distortion, results_lugsail$size_distortion)), 
+     ylim = range(c(results$power_loss, results_lugsail$power_loss)))
+axis(1, xaxp=c(0, .1, 10), las=2)
+lines(QS$x, QS$y, lty = 3, col = "green")
+lines(Daniell$x, Daniell$y, lty = 1, col = "blue")
+legend("topright", legend = c("NW", "QS", "EWC"), 
+       col = c("red", "green", "blue"), 
+       lty = c(2, 3, 1))
+
+# The best b according to Table 2 for the NW estimator 
+NW_b = 1.3*big_T^(-1/2)
+NW_best = generate_plot_points(NW_b, kernel = "NW")
+points(NW_best$x, NW_best$y, col = "red", pch = 15)
+
+
+# Add Iso-Loss Curves when k = .9
+plot_iso_curves = function(loss_match, 
+                           search_size = 200, # Arbitrary for grid search
+                           tolerance = 0.000001,
+                           line_type = 4, 
+                           line_color = "red"){
+  try_size = rep(seq(0, 0.03, length.out = search_size), each=search_size)
+  try_power = rep(seq(0, 0.1, length.out = search_size), times = search_size) 
+  k = .9
+  try_loss = k*try_size^2 + (1-k)*try_power^2
+  index_keep = which(abs(try_loss - loss_match)<tolerance)
+  
+  lines(try_size[index_keep], try_power[index_keep], 
+        lty = line_type, col = line_color)
+}
+
+# For NW best line 
+plot_iso_curves(NW_best$loss)
+
+
+# Plot MCMC points
+points(results$size_distortion, results$power_loss, col = "red")
+points(results$size_distortion[length(try_b)], 
+       results$power_loss[length(try_b)], bg = "red", pch =21, col = "black")
+
+
+points(results_lugsail$size_distortion, results_lugsail$power_loss, col = "purple", 
+       pch = 1)
+points(results_lugsail$size_distortion[length(try_b)], 
+       results_lugsail$power_loss[length(try_b)], bg = "purple", pch =21, col = "black")
+
+# for(i in 1:length(try_b)){
+#   lines(x = c(results$size_distortion[i], 
+#               results_lugsail$size_distortion[i]), 
+#         y = c(results$power_loss[i], 
+#               results_lugsail$power_loss[i]), 
+#         col = "lightgrey")
+# }

@@ -1,0 +1,24 @@
+{
+    "id": "FC247D3C",
+    "path": "~/Documents/GitHub/JobTalk/ShinyApps/Small_b_CV_distr/app.R",
+    "project_path": "ShinyApps/Small_b_CV_distr/app.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1665977512464.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "cursorPosition": "79,14",
+        "scrollLine": "70"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1665984106,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1665984106846,
+    "read_only": false,
+    "read_only_alternatives": []
+}

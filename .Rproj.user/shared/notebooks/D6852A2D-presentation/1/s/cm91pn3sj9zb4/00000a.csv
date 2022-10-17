@@ -1,0 +1,1 @@
+"0","curve(dnorm(x), from =-3, to =3, ylab = ""p(x)"")"

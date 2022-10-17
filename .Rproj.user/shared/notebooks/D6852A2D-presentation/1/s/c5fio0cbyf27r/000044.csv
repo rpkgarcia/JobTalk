@@ -1,0 +1,2 @@
+"0","legend(""topright"", border = ""white"", legend = c(""Z-distr"", ""t-distr""), "
+"0","       lty = c(1, 2), col = c(""black"", ""blue""), lwd = 2, bty = ""n"")"

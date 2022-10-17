@@ -1,0 +1,93 @@
+.reveal section p {
+  color: blue;
+}
+
+
+/* To change background color: 2D6CC0, #003DA5*/
+body {
+  background-color: #2D6CC0; /* UCR official blue */
+  font-size: 30px;
+}
+
+
+
+h4:hover, tr:hover{
+  background-color: #FFB81C;
+} 
+
+
+/* for title */
+.title-slide hgroup {
+  font-size: 40px;
+  letter-spacing: 0;
+}
+
+slides > slide.backdrop {
+  background: white;
+}
+
+.title-slide {
+ background-color: white; 
+}
+
+
+h1 {
+  font-size: 14px;
+}
+
+h2, h3,  h5, h6{
+  font-size: 30px;
+  letter-spacing: 2px;
+  color: black;
+}
+
+
+p, h4 {
+  letter-spacing: 0px;
+  font-size: 20px;
+  color: black;
+}
+
+slides > slide:not(.nobackground):before {
+  width: 50px;
+  height: 50px;
+  background-size: 50px 50px;
+}
+
+
+/* Make slides solid white */
+slides slide { background-image: none; }
+
+
+table {
+    width: 100%; 
+    color: black;
+    table-layout: fixed;
+}
+
+
+td {
+  text-align: center;
+}
+
+table, th, td {
+  border: 1px solid;
+  color: black;
+  padding: 15px;
+  font-size: 20px;
+}
+
+
+th {
+  color: black;
+  font-size: 20px;
+  background-color: #D3D3D3;
+}
+
+
+/* Side-by-side Columns */
+
+.forceBreak { 
+  -webkit-column-break-after: always; 
+  break-after: column; 
+}

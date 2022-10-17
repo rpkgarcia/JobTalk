@@ -1,0 +1,404 @@
+---
+title: "Homework 1"
+author: "Your Name Here"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+ 
+
+# Instructions
+- If you wish to use any additional packages beyond "Base R" (the default) then email Rebecca (`rkurt001@ucr.edu`) for permission. 
+- Use R to answer the questions below. 
+- Check Piazza regularly for clarification on questions, there may be important posts that will not be announced through *Elearn*.  
+
+# Background Information 
+
+Descriptive statistics describe or summarize attributes of a data set. The one of the most common attributes of interest are central tendency and dispersion. Central tendency refers to the point around which data values tend to accumulate. Dispersion refers to how spread out or disperse the data appear around the accumulation point. There are several **measures of central tendency** and **measures of dispersion**.
+
+## Measure of Central Tendency 
+A measure of central tendency is a statistic that describe the middle most value of a data set, or a typical value that you would expect.  Most people think of calculating the (arithmetic) mean when they want to determine the average value.  However, there are several types of averages that can be calculated.  These "averages" are used in different settings for different reasons. We will go over: arithmetic mean, geometric mean, harmonic mean, median 
+    
+### Arithmetic Mean
+Usually referred to as simply the **mean**, the **arithmetic mean** or **sample mean** is denoted by $\overline{x}$ and is an empirical value computed from the data.  Let $x_1, ..., x_n$ represent the randomly sampled data values, where $n$ is the **sample size** (number of observations).  The arithmetic mean is computed using 
+   
+  $$\overline{x} = \frac{\sum_{i=1}^n x_i}{n}$$
+    
+**EXAMPLE**: The total length of four fish fry were 5, 7, 10, 6 mm. Here $n=4$
+   
+   $$\overline{x} = \frac{5+7+10+6}{4} = \frac{28}{4} = 7$$
+
+### Geometric Mean
+The geometric mean is sometimes used for data that measure proportional changes.  We will let $G$ denote the geometric mean. Let $x_1, ..., x_n$ represent the data values and assume all $x_i>0$.  The geometric mean is computed using 
+    
+$$G = \exp \left (\frac{\sum_{i=1}^n \ln x_i}{n} \right ) $$
+    
+where $\ln(x)$ is the natural logarithm $\log_e$ and $\exp(x)$ is the exponential function $(e^x)$. 
+
+**EXAMPLE**:  The average number of offspring per rabbit over three consecutive years was 4.5, 2.0, 3.0 offspring/rabbit.  Here $n=3$.  The geometric mean number of offspring per year is 
+    
+$$G = \exp \left( \frac{\ln(4.5) + \ln(2.0) + \ln(3.0)}{3} \right) $$
+    
+$$ = \exp \left( \frac{1.504077+ 0.693147 +1.098612}{3} \right) $$
+    
+$$= \exp \left( \frac{3.295836}{3} \right)$$
+    
+$$= \exp(1.09861) $$
+    
+approximately 3.00 offspring per year 
+
+### Harmonic Mean 
+
+The **harmonic mean** is sometimes used for data that involve ratios or rates. We will let $H$ denote the harmonic mean. Let $x_1, ..., x_n$ represent the data values and assume all $x_i>0$.  The harmonic mean is computed using 
+    
+$$H = \left ( \sum_{i=1}^n x_i^{-1} /n\right )^{-1} $$
+    
+**EXAMPLE**: The doubling times for three strains of bacteria are 1.5, 1.0, 3.0, hours.  Here $n=3$.  The harmonic mean of the doubling times is 
+    
+$$H = \left ( \frac{(1.5)^{-1} + (1.0)^{-1} + (3.0)^{-1}}{3} \right )^{-1} $$
+    
+$$ = \left ( \frac{0.666667+ 1.000000 + 0.333333}{3}\right )^{-1} $$
+        
+$$ = \left ( \frac{2.000000}{3}\right )^{-1} =1.5 \text{hours} $$
+    
+In this example, $H$ is the doubling time of an equal mixture of the three strains.  The arithmetic mean would overestimate the doubling time ($\overline{x}=1.83$). Note that it is always true that $\overline{x}\geq G \geq H$.  The equality only holds when all the data values are identical. If two or more data values differ, $\overline{x}> G > H$.
+
+
+### Median 
+
+The **median** is the middle value in a set of observations.  The computation of the median depends on whether the number of observations is even or odd.  We will let $M$ represent the median. First one must rank the observations.  Assume $x_1\leq x_2 \leq ... \leq x_n$ are the data where each subscript is the rank.  The median is computed using 
+    
+$$M = \left\{\begin{matrix}
+          x_{(n+1)/2} & \text{, if }n\text{ is odd} \\ 
+          \frac{x_{n/2} +x_{1+(n/2)}}{2} & \text{, if }n\text{ is even} 
+          \end{matrix}\right.$$
+            
+In other words, if $n$ is odd, $M$ is the middle of the ranked observations, whereas if $n$ is even, $M$ is the average of the two middle observations. 
+  
+**EXAMPLE**:  The weights of seeds are 2, 11, 1, 5 mg.  Here $n=4$.  After ranking the data we have $x_1 = 1, x_2 = 2, x_3 = 5, x_4 =11$.  Since $n$ is even 
+
+$$M = \frac{x_{4/2} +x_{1+(4/2)}}{2}$$
+$$ = \frac{x_{2} +x_{3}}{2}$$
+$$ = \frac{2+5}{2}   = 3.5 mg$$
+  
+One advantage of the median is that it is not sensitive to **outliers** which are extremely large or small data values.  The arithmetic mean can be unduly influenced by extreme outliers, especially if $n$ is small. 
+
+## Measures of Dispersion
+
+A measure of dispersion, sometimes also called a measure of spread, is used to describe the variability of a data set. We usually report a measure of dispersion with a measure of central tendency.  A measure of central tendency (usually the mean) tells us what a typical value is the data set, and a measure of dispersion indicates by how much values tend to deviate from this typical value. 
+  
+        
+### Variance
+
+The **variance** is one of the most common measures of dispersion.  It does not have a particularly intuitive interpretation, but has ideal theoretical properties. Let $x_1, ..., x_n$ represent the data.  The variance is computed using either of the following formulas
+    
+$$s^2 = \frac{\sum_{i=1}^n (x_i - \overline{x})^2}{n-1} = \frac{\sum_{i=1}^n x_i^2 - \left ( \left ( \sum_{i=}^n x_i\right )^2/n\right ) }{n-1} $$
+Note that these two formulas for variance are identical mathematically.  
+
+**EXAMPLE** : The total length of four fish fry were 5,7, 10, 6 mm.  Here $n=4$. 
+    
+$$s^2 = \frac{(5)^2 + (7)^2 + (10)^2 + (6)^2 - \left( \left ( 5+7+10+6\right )^2/4 \right ) }{4-1} $$
+    
+$$ = \frac{25+ 49+ 100+36 - \left ( (28)^2/4\right )}{3}$$
+    
+$$ = \frac{210 - (784/4)}{3} = \frac{14}{3} = 4.67 mm$$
+
+
+
+### Standard Deviation
+
+The **standard deviation** is also very common, it is the square root of the variance. Let $x_1, ..., x_n$ represent the data.  
+    
+
+**EXAMPLE** : The total length of four fish fry were 5,7, 10, 6 mm.  Here $n=4$. We saw above that $s^2 = 4.67$. Thus the standard deviation is $s = \sqrt{4.67} = 2.16$.
+
+
+
+### Coefficient of variation
+
+The **coefficient of variation** is a dimensionless quantity.  It measures dispersion relative to the mean.  We will denote the coefficient of variation as $CV$. Let $x_1, ..., x_n$ represent the data values and assume all $x_i>0$.  The coefficient of variation is computed as the square root of the variance divided by the mean. 
+    
+$$CV = \frac{s}{\overline{x}}$$
+    
+  
+**EXAMPLE**: The total length of four fish fry were 5, 7, 10, 6 mm.  Here $n=4$. The values for  $\overline{x}=7$ and $s = 2.166667$, calculated above. Therefore, 
+    
+$$CV = \frac{2.166667}{7.0} = 0.309 $$
+        
+or $30.9\%$
+    
+Because it is a dimensionless quantity, the coefficient of variation can be used for making comparisons of dispersion for measurements of different scales; for example, the relative variation in body mass for mice versus elephants or the relative variation in height versus weight among adults. 
+
+
+### Range
+
+The **range** is the difference between the largest and the smallest observations.  We will denote the range as $R$. Let $x_1, ..., x_n$ represent the data values.  The range is computed using
+    
+$$R = \max(x_i) - \min(x_i)$$
+    
+where $\max()$ and $\min()$ represent the largest and smallest of the observations.      
+
+**EXAMPLE**: The total length of four fish fry were 5, 6, 10, 6 mm.  The range is 
+    
+$$R = \max(5, 7, 10, 6) - \min(5, 7, 10, 6)$$
+    
+$$ = 10 - 5 = 5mm$$
+    
+Because it involves the extreme observations, the range is very sensitive to outliers. 
+
+
+### Mean Deviaiton 
+
+The **mean deviation** is the average of the absolute values of the differences between the data and the mean.  We will denote the mean deviation as $MD$. Let $x_1, ..., x_n$ represent the data values.  The mean deviation is computed using 
+    
+$$MD = \frac{\sum_{i=1}^n |x_i - \overline{x}|}{n}$$
+    
+where the notation $|x|$ means the absolute value of x. 
+
+**EXAMPLE**: The total length of four fish fry were $5, 7, 10, 6$ mm.  Here $n=4$.  In section 2.2.1 it was shown that $\overline{x} = 7.0$.  The mean deviation is 
+    
+$$MD = \frac{|5-7| + |7-7| + |10-7| + |6-7|}{4}$$
+    
+$$=\frac{2+0+3+1}{4} = \frac{6}{4} = 1.5 \text{mm}$$
+    
+Use of the mean deviation is uncommon.  It appears more often in physics and chemistry. 
+
+# Questions 
+
+**Question 1: Some R Basics (5 points)** 
+
+1a) Which of the following object names should we not use: `T`, `1first`, `arg`, `_start`, `a`.  Why should we not use these names when creating an object?
+
+
+We cannot use the names `1first` and `_start`, which will result in a error. We probably should avoid `T` because that is a special object in R.  (Flexibility with how students answer this problem)
+
+
+1b) In R we have many operators, more than what was presented in class.  One of the operators is `%%`.  Look up this operator to see what it does and discuss what it does. Include information about the resource you used (website, book, etc). 
+
+
+The operator `%%` gives the remainder of the object of the left of the operator after it is divided by the object on the right of the operator.   
+
+1c) Show an example of how the operator `%%` could be used to determine if a number is even or odd. 
+
+If we have a number `num` and use the operator `%%` with the number 2, like  `num %% 2`, then this will return a 0 if even, and 1 if odd. 
+
+```{r}
+num <- 5
+num %% 2
+```
+
+
+1d) Another operator we did not discuss is `:`.  Look up this operator and discuss what it does. Include information about the resource you used (website, book, etc). 
+
+The operator `:` returns a sequence of whole numbers between the numbers on either side of the operator. 
+
+1e) Show an example of how the operator `:` works. 
+
+```{r}
+1:10
+```
+
+
+**Question 2: Practice with Vectors (6 points)**
+
+2a) The Fibonacci sequence appears in many biological structures. It is formed by starting with the number 0, 1 and then adding the last two numbers to get the next number: 0, 1, 1, 2, 3, 5, 8, etc. Create *integer* vector called `int_fib` that contains the first 10 values of the Fibonacci sequence. (You can enter the values. You do not need to compute them). Type the name of the vector so that it is displayed. 
+
+```{r}
+int_fib <- c(0L, 1L, 1L, 
+             2L, 3L, 5L, 
+             8L, 13L, 21L, 34L)
+```
+
+
+2b) Similarly to question 2a, create a *double* type vector called `dbl_fib` with the first 5 values of the Fibonacci sequence.  
+
+```{r}
+dbl_fib <- c(0, 1, 1, 
+             2, 3)
+```
+
+
+2c) Create a *character* vector with any elements of your choice that has length 5. 
+
+```{r}
+chr_vec <- c("STAT", "107", "is", "so", "cool")
+```
+
+
+2d) Convert and redefine `int_fib` into a character vector. 
+
+```{r}
+int_fib <- as.character(int_fib)
+int_fib 
+```
+
+
+2e) Use a built in function to determine how many elements are in `int_fib`, `dbl_fib`, and your vector in 2c.
+
+```{r}
+length(int_fib)
+length(dbl_fib)
+length(chr_vec)
+```
+
+
+2f)  Output the second element of `int_fib` using its index. 
+
+```{r}
+int_fib[2]
+```
+
+
+**Question 3: Coercion and Vector Types (5 points) **
+
+3a) Vectors built using `c()` must be all of the same type.  If given a combination of different types of elements, R will convert all the elements to be of the same type using a series of internal rules.  Create a series of vectors that are composed of elements of different types and use the `typeof()` function to see how R decides what type of vector to create.  You do not need to show intermediate steps or R code here, just fill out your results after the "-->". The first one is filled out for you. (3 points)
+
+- integer, double  --> double 
+
+- integer, character  --> character
+
+- integer, logical --> integer
+
+- double, character -->  character 
+
+- double, logical --> double
+
+- character, logical --> character
+
+- integer, double, character --> character 
+
+- integer, double, logical --> double 
+
+- integer, character, logical --> character 
+
+- double, character, logical --> character 
+
+- double, logical, integer, character --> character 
+
+
+3b) Describe and comment on patterns that you see in 3a.  Does it look like these conversions are random? (2 points)
+
+These conversions are not random.  If a character element is present, then we will always get a character vector. If no character is present, but a double exists, then we will always get a double.  The next priority is integer, and lastly logical. 
+
+logical < integer < double < character 
+
+**Question 4: Measures of Center (6 points)**  
+
+For these questions use only (arithmetic/logical/relational/assignment) operators, and the functions `exp()`, `sum()`, `log()`, and `length()`. Do not use `mean()`. Use the vector `LH` below in R to answer the following questions.  This vector contains annual measures of the level (in feet) of Lake Huron, USA.
+
+```{r}
+LH <- c(LakeHuron)
+```
+
+
+4a) Calculate the arithmetic mean of the vector `LH`. 
+
+```{r}
+am <- sum(LH)/length(LH)
+am
+```
+
+
+4b) Calculate the geometric mean of vector `LH`.
+
+```{r}
+gm <- exp(sum(log(LH))/length(LH))
+gm
+```
+
+
+4c) Calculate the harmonic mean of the vector `LH`. 
+
+```{r}
+hm <- (sum(1/LH)/length(LH))^(-1)
+hm
+```
+
+
+4d) Store the geometric mean, harmonic mean, and arithmetic mean of the of the vector `LH` in a vector called `LH_averages`. 
+
+```{r}
+LH_averages <- c(am,  gm, hm)
+LH_averages
+```
+
+
+4e) Name each element in the vector `LH_averages` to clearly indicate which statistic is which. 
+
+```{r}
+names(LH_averages) <- c("Mean", "GeoMean", "HarmMean")
+LH_averages
+```
+
+
+4f) Use a one line command to check that arithmetic mean is larger than the geometric mean AND that the geometric mean is larger than the harmonic mean. 
+```{r}
+(am > gm) & (gm > hm)
+```
+
+
+**Question 5: Measures of Spread  (8 points)**
+
+For these questions use only (arithmetic/logical/relational/assignment) operators, and the functions `exp()`, `sum()`, `log()`, `abs()`, `length()`. Do not use `mean()` or `var()`. Use the vector `LH` from above to answer the following questions.
+
+
+5a) Calculate the mean deviation of the vector `LH`. 
+
+```{r}
+mean_dev <- sum(abs(LH - am))/length(LH)
+mean_dev
+```
+
+
+5b) There are two formulas for variance above.  Use one to calculate the variance of vector `LH`, call this `var1`.
+
+```{r}
+var1 <- sum((LH - am)^2)/(length(LH)-1)
+var1
+```
+
+
+5c) Use the other variance formula to calculate the variance of vector `LH`, call this `var2`.
+
+```{r}
+var2 <-  (sum(LH^2)-sum(LH)^2/length(LH))/(length(LH)-1)
+var2
+```
+
+
+5d) Calculate the coefficient of variation. 
+
+```{r}
+CoefVar <- sqrt(var1)/am
+CoefVar
+```
+
+
+5d) Store the mean deviation, variance, and coefficient of variation of the vector `LH` in a vector called `LH_dispersion`. 
+
+```{r}
+LH_dispersion <- c(mean_dev, var1, CoefVar)
+```
+
+
+5e) Name each element in the vector `LH_dispersion` to clearly indicate which statistic is which. 
+
+```{r}
+names(LH_dispersion) <- c("MeanDeviaiton", "Var", "Coefficient of Variation")
+LH_dispersion
+```
+
+
+5f) Use an operator to check if `var1`  and `var2` are equal.  
+
+```{r}
+var1 == var2
+```
+
+
+5g) The two formulas for variance are identical mathematically.  Discuss why the two objects `var1` and `var2` in 5f might not have been equal.  
+
+This is due to a floating point error.  There is a higher level of precision in the computer that we are not seeing. 
+

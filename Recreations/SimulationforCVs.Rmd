@@ -1,0 +1,509 @@
+---
+title: "Non-Standard Critical Values"
+author: "Rebecca Kurtz-Garcia"
+date: "4/26/2022"
+output: html_document
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In this document I attend to recreate the fixed-b critical values generated in Kiefer and Vogelsang (2005, "A new asymptotic...") in section 3.  The method I am choosing to use is based ona simulation for the Bartlett kernel with $b= 0.02, 0.04, \dots, 0.98, 1$ with signficance level $90%, 95%, 97.5%, and 99%$.  I will be 50,000 replicates with normalised partial sums of 1000 iid standard normal random variables to replicate the Brownian motion process.  To do this simulation I will follow the steps outlined in the next section, and essentially do a permutation method to estimate the distribution. For now I focus on the Bartlett kernel and a t-statistic ($m=1$), and create critical value functions in the following form: 
+
+$$cv(b) = a_0 + a_1 + b + a_2 b^2 + a_3 b^3$$
+
+This was the method used by Keifer and Vogelsang (2005).  
+
+# Method Outline 
+
+Procedure to generate 50,000 test statistics, each with a sample size of 1000. The procedure is described below. 
+
+Kernel functions used 
+
+$$\text{Bartlett} = 1 - |x| \text{ for } |x|<1 $$
+
+# Simulation 
+```{r}
+# libraries 
+library(e1071)
+  the_bs = seq(0.02, 1, by = 0.02)
+
+Q_of_b = function(b){
+  # Brownian Bridge Process (Standard)
+  x1 = rbridge(end = 1, frequency = 1000)
+  x2 = rbridge(end = 1, frequency = 1000)
+  x3 = rbridge(end = 1, frequency = 1000)
+  x4 = rbridge(end = 1, frequency = 1000) 
+  x5 = rbridge(end = 1, frequency = 1000)
+  x6 = rbridge(end = 1, frequency = 1000) 
+  
+  # Calculating Q(b) (first term)
+  part1 = sum(t(x1) %*% x2)
+  
+  # To help with indexing on the second term
+  low_b = 1+1000*b
+  high_b = 1000*(1-b)
+  if(b ==1){
+    low_b = 1000
+  }
+  # if(length(low_b:length(x)) != length(1:high_b)){
+  #     print(c(low_b, high_b, b))
+  #     print(c(length(low_b:length(x)), length(1:high_b)))
+  # }
+  # Calculate 
+  part2 = x3[low_b:length(x3)] %*% x4[1:high_b] + x5[1:high_b] %*%x6[low_b:length(x6)]
+  Q = 2*part1/b - part2/b
+  return(Q)
+}
+
+t_stat = function(b){
+  z1 = rnorm(1000)
+  z2 = rnorm(1000)
+  brown1 = sum(z1)/sqrt(length(z1)) # Brownian motion 
+  brown2 = sum(z2)/sqrt(length(z2)) # Brownian motion 
+  t_stat = brown1%*% Q_of_b(b)^(-1) %*% brown2 *1000 
+  return(t_stat)
+}
+
+# cvs = replicate(5000, t_stat(.2))
+# hist(cvs, freq =F)
+
+# Need these for later
+alpha_levels = 1 - c(.10, .05, .025, .01)/2
+standard_norm_cv = qnorm(alpha_levels) 
+
+get_fit = function(sims = 100){
+  
+  the_bs = seq(0.02, 1, by = 0.02)
+  the_cvs = sapply(the_bs, function(b){
+          t_stats = replicate(sims, t_stat(b))
+          cv = quantile(t_stats, probs = alpha_levels)
+  })
+
+  #rep_b = rep(the_bs, each = sims)
+  #print(c(length(rep_b), length(the_cvs), sims*length(the_bs)))
+  the_cvs = as.list(data.frame(t(the_cvs)))
+  
+  # all_fits = lapply(the_cvs, function(specific_cvs){
+  #   fit = lm(specific_cvs ~ 0 + poly(the_bs, 3, raw = T),  
+  #          offset = rep(standard_norm_cv[i], length(specific_cvs)))
+  #   return(fit)
+  # })
+  
+  
+  all_fits = list(NA, NA, NA, NA)
+  
+  for(i in 1:length(standard_norm_cv)){
+    print(paste("i=", i, ", alpha = ", abs(1-alpha_levels[i])))
+    specific_cvs = the_cvs[[i]] - standard_norm_cv[i]^2
+    fit = lm(specific_cvs ~ 0 + poly(the_bs, 3, raw = T))
+             #offset = rep(standard_norm_cv[i], length(specific_cvs)))
+    all_fits[[i]] = fit 
+  }
+
+  return(all_fits)
+}
+
+fit = get_fit(sims = 1000)
+summary(fit[[2]])
+
+```
+
+```{r}
+fit2 = fit[[2]]
+plot(the_bs, fit2$fitted.values + standard_norm_cv[2]^2, type = "l")
+points(the_bs, fit2$model$specific_cvs + standard_norm_cv[2]^2)
+```
+
+
+
+
+```{r}
+# Look at alpha = 0.05
+model_fits = data.frame(fitted = fit[[2]]$fitted.values+  standard_norm_cv[2], 
+                        obs = fit[[2]]$model$specific_cvs +  standard_norm_cv[2])
+
+# What is the line for their equation KS2005
+the_fitted_eq = 
+1.6449 + 2.1859*the_bs + 0.4160*the_bs^2 -0.5324*the_bs^3
+model_fits$KS = the_fitted_eq
+
+SPJ2008 = qnorm(.95)+ 1.8386*the_bs +1.9267*the_bs^2
+#SPJ2008 = qnorm(.975)+ 10.0414*the_bs +16.9197*the_bs^2
+SPJ2008_sq = qnorm(.95)^2 + 6.0489*the_bs +9.7192*the_bs^2
+SPJ2008_sq = qnorm(.975)^2 + 10.0414*the_bs +16.9197*the_bs^2
+
+model_fits$SPJ2008 = SPJ2008
+model_fits$SPJ2008_sq = SPJ2008_sq
+
+# What is the CV for LLSW ?
+cv_nw_05 <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/UCR/Dissertation Stuff/WriteUps/cv_nw_05.csv", header=FALSE)
+# This is a perfect fit. 
+#fit = lm(c(cv_nw_05$V2- qchisq(.95, 1))  ~0 +  poly(cv_nw_05$V1, degree =3, raw = T))
+
+the_ylim = range(c(unlist(model_fits), cv_nw_05[,2]))
+
+plot(the_bs, model_fits$fitted, type = "l", 
+     ylim = the_ylim, col = "white")
+points(the_bs, model_fits$obs, col = "red")
+lines(the_bs, model_fits$KS, col = "blue")
+lines(cv_nw_05$V1, cv_nw_05$V2, col = "green")
+lines(the_bs, model_fits$SPJ2008, col = "orange")
+lines(the_bs, model_fits$SPJ2008_sq, col = "purple")
+legend("topleft", c(
+         "KS2005 fitted", 
+         "LLSW used", "SPJ2008", "SPJ2008_sq"), 
+       col = c("blue", "green", "orange", "purple"), 
+       lty = c(1, 1, 1, 1), 
+       pch = c( NA, NA, NA, NA))
+
+# Corresponds to Orange (SPJ two sided .90) and Blue (KV one sided .95) lines
+abline(h = qnorm(.95), col = "red", lty = 3)
+
+# Corresponds to Green (.95), and Purple (SPJ, .95 two sided?)
+abline(h = qchisq(.95, 1), col = "red", lty = 2)
+
+# Note that nonstandard CVs for some reason converge to standard as b gets small
+# I am not sure why though
+```
+
+# Analytical Method
+
+Using SPJ2008, we can also solve for these points analytically.
+
+Lugsail 
+
+$$\hat{\Sigma}_L = \frac{1}{c_n} \hat{\Sigma}_b - \frac{c_n}{1-c_n} \hat{\Sigma}_{b/r}$$
+Zero lugsail 
+
+$$r = 2$$
+
+$$c_n = r^{-q}$$
+
+### Bartlett kernel functions 
+
+```{r}
+# This is all for the bartlett kernel 
+
+# Support function to calculation c1, c2, c3, c4
+BKernel = function(x, M=1){
+  w = ifelse(abs(x)<M, 1-abs(x/M), 0)
+  return(w)
+}
+c1 = integrate(BKernel, -1, 1)$value
+
+# the_T = 200
+# b = 0.14
+# M = the_T*b
+# x = seq(-M, M, length.out = 100)
+# y = Kernel(x)
+
+
+BKernel_sq = function(x, M=1){
+  w = ifelse(abs(x)<M, 1-abs(x/M), 0)
+  return(w^2)
+}
+c2 = integrate(BKernel_sq, -1, 1)$value
+
+
+BKernel_abs = function(x, M=1){
+  w = ifelse(abs(x)<M, 1-abs(x/M), 0)
+  return((-w*abs(x))) 
+}
+c3 = integrate(BKernel_abs, -1, 1)$value
+
+BKernel_abs_sq = function(x, M=1){
+  w = ifelse(abs(x)<M, 1-abs(x/M), 0)
+  return((-w^2*abs(x))) 
+}
+c4 = integrate(BKernel_abs_sq, -1, 1)$value
+
+
+
+# alpha: desired significance for t^2 (normal, and two sided)
+get_cv_bartlett = function(b = .14, alpha= 0.05){
+  
+  z = qnorm(1-alpha/2)
+  z_sq = z^2
+  k1 = (c1 +0.5*c2)*z_sq + .5*c2*z_sq^2
+  k2_1 = (.5*c1^2 + 3*c1*c2/2 + 3*c2^2/16 + c3 + .25*c4)*z_sq
+  k2_2 = (-.5*c1 + 3*c1*c2/2 + 9*c2^2/16 + .25*c4)*z_sq^2+ 5*c2^2*z_sq^4/16 - (c2^2/16)*z_sq^6
+  k2 = k2_1 + k2_2
+  
+  z_sq_b = z_sq +k1*b #+ k2*b^2
+  return(z_sq_b)
+} 
+
+
+# Check if results fit previous plots 
+plot(the_bs, model_fits$fitted, type = "l", 
+     ylim = the_ylim, col = "white")
+lines(cv_nw_05$V1, cv_nw_05$V2, col = "green")
+#lines(the_bs, model_fits$SPJ2008, col = "orange")
+lines(the_bs, model_fits$SPJ2008_sq, col = "purple")
+legend("topleft", c(
+         "KS2005 fitted", 
+         "LLSW used", "SPJ2008_sq (1 degree)", "SPJ2008_sq (2 degree)"), 
+       col = c("blue", "green", "black", "purple"), 
+       lty = c(1, 1, 1, 1), 
+       pch = c( NA, NA, NA, NA))
+
+
+# Corresponds to Green (.95), and Purple (SPJ, .95 two sided?)
+abline(h = qchisq(.95, 1), col = "red", lty = 2)
+
+
+lines(the_bs, get_cv_bartlett(the_bs))
+
+```
+
+
+### Lugsail kernel functions 
+
+```{r}
+# This is all for the lugsail kernel 
+
+r = 2
+c = 1/r
+
+# Support function to calculation c1, c2, c3, c4
+support = function(x){
+  y = (1- abs(x/M))/(1-c) - c*(1- abs(x*r/M))/(1-c)
+  y
+}
+
+Kernel = function(x, M=1){
+  w = ifelse(abs(x)<M, ifelse(abs(x)<M/r,  support(x), (1-abs(x/M))/(1-c)), 0)
+  return(w)
+}
+c1 = integrate(Kernel, -1, 1)$value
+
+# the_T = 200
+# b = 0.14
+# M = the_T*b
+# x = seq(-M, M, length.out = 100)
+# y = Kernel(x)
+
+
+Kernel_sq = function(x, M=1){
+  w = ifelse(abs(x)<M, ifelse(abs(x)<M/r,  support(x), (1-abs(x/M))/(1-c)), 0)
+  return(w^2)
+}
+c2 = integrate(Kernel_sq, -1, 1)$value
+
+
+Kernel_abs = function(x, M=1){
+  w = ifelse(abs(x)<M, ifelse(abs(x)<M/r,  support(x), (1-abs(x/M))/(1-c)), 0)
+  return((-w*abs(x))) 
+}
+c3 = integrate(Kernel_abs, -1, 1)$value
+
+Kernel_abs_sq = function(x, M=1){
+  w = ifelse(abs(x)<M, ifelse(abs(x)<M/r,  support(x), (1-abs(x/M))/(1-c)), 0)
+  return((-w^2*abs(x))) 
+}
+c4 = integrate(Kernel_abs_sq, -1, 1)$value
+
+
+# alpha: desired significance for t^2 (normal, and two sided)
+get_cv_lugsail = function(b = .14, alpha= 0.05){
+  z = qnorm(1-alpha/2)
+  z_sq = z^2
+  k1 = (c1 +c2/2)*z_sq + .5*c2*z_sq^2
+  k2_1 = (.5*c1^2 + 3*c1*c2/2 + 3*c2^2/16 + c3 + .25*c4)*z_sq
+  k2_2 = (-.5*c1 + 3*c1*c2/2 + 9*c2^2/16 + .25*c4)*z_sq^2+ 5*c2^2*z_sq^4/16 - (c2^2/16)*z_sq^6
+  k2 = k2_1 + k2_2
+  
+  z_sq_b = z_sq +k1*b #+ k2*b^2
+  return(c(z_sq_b))
+}
+
+
+# Check if results fit previous plots 
+plot(the_bs, model_fits$fitted, type = "l", 
+     ylim = the_ylim, col = "white")
+lines(cv_nw_05$V1, cv_nw_05$V2, col = "green")
+#lines(the_bs, model_fits$SPJ2008, col = "orange")
+lines(the_bs, model_fits$SPJ2008_sq, col = "purple")
+legend("topleft", c(
+         "KS2005 fitted", 
+         "LLSW used", "Lugsail (1 degree)", "SPJ2008_sq (2 degree)"), 
+       col = c("blue", "green", "black", "purple"), 
+       lty = c(1, 1, 1, 1), 
+       pch = c( NA, NA, NA, NA))
+
+
+# Corresponds to Green (.95), and Purple (SPJ, .95 two sided?)
+abline(h = qchisq(.95, 1), col = "red", lty = 2)
+
+lines(the_bs, get_cv_lugsail(the_bs))
+```
+
+
+
+
+
+## Using MATLAB from LLSW paper (readjusted)
+
+```{r}
+#  What bs to use ---------------------------------------------------------
+
+try_b =  seq(0.005, .99, by = 0.005)
+
+
+# Autocovariance matrices -------------------------------------------------
+# h = lag 
+R = function(h, the_sim_data){
+  big_T = nrow(the_sim_data)
+  index = 1:(big_T -h)
+  
+  # Already centered
+  est = lapply(index, function(i){
+      est = the_sim_data[i, ]%*%t(the_sim_data[(i+h), ])
+  })
+  
+  # Sum together
+  autocov_s = Reduce('+', est)/big_T
+    
+  # Because of symmetry 
+  if(h!=0){
+    autocov_s = autocov_s + t(autocov_s)
+  }
+  
+  return(autocov_s)
+}
+
+
+
+# Bartlett Kernel Estimator -----------------------------------------------
+bartlett = function(x){
+  if(abs(x)<1){
+    k_x = 1-abs(x)
+  } else{
+    k_x = 0 
+  }
+  return(k_x)
+}
+
+# Get F-statistic Function -----------------------------------------------
+get_F_stats = function(b, sim_data, the_means, all_autocovariances){
+  M = b*nrow(sim_data)
+  W = rep(0, nrow(all_autocovariances))
+  weights = sapply(0:(M)/(M+1), bartlett)
+  W[1:length(weights)] = weights
+  dim = length(the_means)
+  big_T = nrow(sim_data)
+  omega = matrix(colSums(W * all_autocovariances)/big_T, dim, dim) 
+  m_max = ncol(sim_data)
+  F_stat = sapply(1:m_max, function(m){
+    omega_inv = solve(omega[1:m, 1:m])
+    F_stat = the_means[1:m]%*% omega_inv %*%the_means[1:m]/m
+  })
+  return(F_stat)
+}
+
+
+
+# Put it all together -----------------------------------------------
+generate_F_stats = function(big_T = 1000, dim = 12){
+
+  # Simulate the data 
+  sim_data = matrix(rnorm(dim*big_T), nrow = big_T, ncol = dim)
+  the_means = colMeans(sim_data)
+  sim_data = apply(sim_data, 1, function(row) row - the_means)
+  sim_data = t(sim_data)
+  
+  # Get autocovariance matrices
+  all_autocovariances <-sapply(0:(big_T-1), R, the_sim_data= sim_data)
+  all_autocovariances <- t(all_autocovariances)
+  # What part of the autocovariance matrix is it
+        # rownames(all_autocovariances) = paste("Lag=", 0:(nrow(sim_data)-1), sep = "")
+        # colnames(all_autocovariances) = paste("m", 
+        #                                       rep(1:(ncol(sim_data)), each = ncol(sim_data)), 
+        #                                       rep(1:(ncol(sim_data)), times = ncol(sim_data)), 
+        #                                       sep = "")
+  
+  # F-statistics for various b values 
+  # each value corresponds to a different b 
+  F_stats = sapply(try_b, get_F_stats, sim_data=sim_data, 
+                   the_mean = the_means, 
+                   all_autocovariances = all_autocovariances)
+  F_stats = t(F_stats)
+  colnames(F_stats) = paste("D", 1:ncol(sim_data), sep = "")
+  rownames(F_stats) = paste("b=", try_b, sep="")
+  
+  return(F_stats)
+}
+
+# Run simulations  -----------------------------------------------
+all_F_stats = replicate(100, generate_F_stats())
+
+
+t = apply(all_F_stats, 1:2, quantile, probs = 0.95)
+
+```
+
+```{r}
+
+# Need these for later
+alpha_levels = 1 - .025
+standard_norm_cv = qnorm(alpha_levels) 
+
+
+
+# vec_F = c(all_F_stats)
+# vec_b = rep(try_b, each =ncol(all_F_stats))
+
+specific_cvs = t[,1] - standard_norm_cv^2
+fit = lm(specific_cvs ~ 0+  poly(try_b, 3, raw = T))
+
+summary(fit)
+
+```
+
+
+```{r}
+cv_nw_05 <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/UCR/Dissertation Stuff/WriteUps/cv_nw_05.csv", header=FALSE)
+
+plot(try_b, fit$fitted.values + standard_norm_cv^2, type = "l")
+
+# My observed values 
+points(try_b, fit$model$specific_cvs + standard_norm_cv^2)
+
+# Critical values used by LLSW 
+lines(cv_nw_05$V1, cv_nw_05$V2, col = "red")
+
+# Chisq critical value
+abline(h = qchisq(.95, 1), col = "red", lty = 2)
+
+# SPJ Closed form, second degree
+SPJ2008_sq = qnorm(.975)^2 + 10.0414*try_b +16.9197*try_b^2
+lines(try_b, SPJ2008_sq , col = "blue")
+
+# legend
+legend("topleft", 
+       c("My fitted", "My obs", "LLSW Numeric", "Sun Analytical", "Chi Sq"), 
+       col = c("black", "black", "red", "blue", "red"), 
+       lty = c(1, NA, 1, 1, 2), 
+       pch = c(NA, 1, NA, NA, NA))
+```
+```{r}
+# Running average of the percentile
+# Want to do a simulation large enough that they all level off
+
+# Pick any b 
+b_index = 100
+m1_05_Fstats = all_F_stats[b_index, 1, ]
+p = rep(NA, length(m1_05_Fstats))
+for(i in 1:length(m1_05_Fstats)){
+  p[i] = quantile(m1_05_Fstats[1:i], probs = 0.95)
+}
+
+plot(1:length(m1_05_Fstats), p, type = "l")
+```
+

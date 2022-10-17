@@ -1,0 +1,16 @@
+READ ME:
+
+
+The files: 
+
+  Bartlett_XX.csv and Bartlett_Lugsail_XX.csv
+  These contain the CV for a given m, kernel, and sigficicance level. 
+  The XX represents SIGNIFICANCE LEVEL 
+
+
+The files: 
+
+  distr_est_bXX.csv
+  These contain test statistics that can be used for to estimate the density function. 
+  They depend on b, m, kernel.
+  The XX represents BANDWIDTH (b). 

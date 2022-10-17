@@ -1,0 +1,58 @@
+
+# Need these for later
+alpha_levels <- 1 - .05
+m <- 1
+chisq_cv <- qchisq(alpha_levels, df = m)/m 
+
+
+fitted_model <- function(cv_matrix){
+        try_b <- cv_matrix[,1]
+        try_b <- as.numeric(gsub("b=", "", try_b))
+        specific_cvs = cv_matrix[,m+1] - chisq_cv
+        fit = lm(specific_cvs ~ 0+  poly(try_b, 3, raw = T))     
+        return(fit)
+}
+
+
+
+cv_b_05 <- read.csv("SimulatedFixedbCV(from cluster)/Bartlett_05.csv")
+cv_b_lug_05 <- read.csv("SimulatedFixedbCV(from cluster)/Bartlett_Lugsail_05.csv")
+cv_nw_05 <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/UCR/Dissertation Stuff/WriteUps/cv_nw_05.csv", header=FALSE)
+try_b <- cv_b_05[,1]
+try_b <- as.numeric(gsub("b=", "", try_b))
+fit_bartlett <- fitted_model(cv_b_05)
+fit_bartlett_lug <- fitted_model(cv_b_lug_05)
+imported <- fitted_model(cv_nw_05)
+
+
+reso <- 175
+length <- 4*reso/72
+png("CV_plot.png",units="in",res=reso,height=length,width=length)
+par(mar=c(5,5,2,2),xaxs = "i",yaxs = "i", cex=2)
+
+#png("CV_plot.png",width = 400, height = 400, units = "px")
+plot(c(0, try_b), c(chisq_cv, fit_bartlett$fitted.values + chisq_cv), type = "l", 
+     xlim = c(0, 0.5), ylim = c(0, 20),
+     col = "red", lwd = 4, xlab = "Bandwidth (b)", ylab = "Critical Value")
+lines(c(0, try_b), c(chisq_cv, fit_bartlett_lug$fitted.values + chisq_cv), col = "blue", lwd = 4)
+#lines(cv_nw_05[,1], cv_nw_05[,2], col = "red", lty = 2)
+
+
+# My observed values 
+
+#points(try_b, fit$model$specific_cvs + chisq_cv)
+abline(h = chisq_cv, lwd = 4, lty = 2)
+abline(v = 0.07, lwd = 4, lty = 3, col = "grey")
+
+legend("topleft", 
+       legend = c("Small-b CV", 
+                  "Fixed-b: Bartlett", 
+                  "Fixed-b: Lugsail", 
+                  "CVs at b = 0.07"), 
+       lty = c(2, 1, 1, 3), 
+       col = c("black", "red", "blue", "grey"), 
+       lwd = 4)
+
+dev.off()
+
+
