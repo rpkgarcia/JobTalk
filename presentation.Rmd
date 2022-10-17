@@ -486,7 +486,7 @@ Optimal bandwidth for given set up used.
 
 - <h4> **WHAT?** Testing Optimal Lugsail Estimator for Inference</h4>
 
-- <h4> **WHEN?** Applications in econometrics, time series, spectral analysis, MCMC simulations </h4>
+- <h4> **WHEN?** Applications in econometrics, time series, spectral analysis, MCMC </h4>
 
 - <h4> **HOW?** Use transformed kernels, alternative assumptions, and new loss function. </h4>
 
@@ -503,7 +503,7 @@ Optimal bandwidth for given set up used.
 
 ## Future Directions 
 
-- MCMC.
+- MCMC
 
 - Estimators: Steep origin and series estimators. 
 

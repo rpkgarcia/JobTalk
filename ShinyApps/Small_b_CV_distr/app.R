@@ -43,7 +43,7 @@ ui <- fluidPage(
              column(4, selectInput("b",
                         "Select b:",
                         list("0.2" = 0.2,
-                             "max" = 50,
+                             "0.07" = 0.07,
                              "value" = 30))
                     ), 
             column(4, selectInput("alpha",
@@ -56,8 +56,8 @@ ui <- fluidPage(
     ), 
 
     fluidRow(
-        column(6, plotOutput("cvPlot")), 
-        column(6, plotOutput("distPlot"))
+        column(6, plotOutput("distPlot")), 
+        column(6, plotOutput("cvPlot"))
     )
 
     
@@ -70,9 +70,13 @@ server <- function(input, output) {
         
         # Alot of this came from "fitted_fixed_b.R"
         alpha <- as.numeric(paste(".", input$alpha, sep = ""))
-        bartlett_file <- paste("Bartlett_", input$alpha, ".csv", sep = "")
+        core_link <- "https://raw.githubusercontent.com/rpkgarcia/JobTalk/main/ShinyApps/Small_b_CV_distr/Bartlet_CV/"
+        bartlett_file <- paste(core_link, 
+                               "Bartlett_", 
+                               input$alpha, ".csv", sep = "")
         bartlett_table <- read.csv(bartlett_file)
-        bartlett_lug_file <- paste("Bartlett_Lugsail_", 
+        bartlett_lug_file <- paste(core_link, 
+                                   "Bartlett_Lugsail_", 
                                    input$alpha, ".csv", sep = "")
         bartlett_lug_table <- read.csv(bartlett_lug_file)
         
@@ -81,8 +85,8 @@ server <- function(input, output) {
         chisq_cv <- qchisq(1-alpha, df = m)/m 
         try_b <- bartlett_table[,1]
         try_b <- as.numeric(gsub("b=", "", try_b))
-        fit_bartlett <- fitted_model(bartlett_table)
-        fit_bartlett_lug <- fitted_model(bartlett_lug_table)
+        fit_bartlett <- fitted_model(bartlett_table, alpha_level = alpha)
+        fit_bartlett_lug <- fitted_model(bartlett_lug_table, alpha_level = alpha)
         
         bartlett_fit <- fitted_value(fit_bartlett, 
                                      as.numeric(input$b), alpha)
@@ -98,11 +102,19 @@ server <- function(input, output) {
              ylab = "Critical Value", 
              main = c("CV vs b"))
         mtext( cex=1, side = 3,
-              "Given: kernel, Significance Level, m")
+              "Given: kernel, m, significance level (alpha)")
         lines(c(0, try_b), 
               c(chisq_cv, fit_bartlett_lug$fitted.values + chisq_cv), 
               col = "blue", lwd = 4)
-
+        
+        points(x = c(input$b, input$b), 
+               y = c(bartlett_fit,
+                     bartlett_lug_fit))
+        # text(x = c(input$b, input$b), 
+        #      y = c(bartlett_fit,
+        #            bartlett_lug_fit), 
+        #      labels = round(c(bartlett_fit,
+        #                       bartlett_lug_fit), 3))
         
         # My observed values 
         abline(h = chisq_cv, lwd = 4, lty = 2)
@@ -119,23 +131,32 @@ server <- function(input, output) {
     })
 
     output$distPlot <- renderPlot({
-        file_name <- paste("distr_est_b", input$b, ".csv", sep = "")
+        CV_link <- "https://raw.githubusercontent.com/rpkgarcia/JobTalk/main/ShinyApps/Small_b_CV_distr/Bartlet_CV/"
+        distr_link <-"https://raw.githubusercontent.com/rpkgarcia/JobTalk/main/ShinyApps/Small_b_CV_distr/distr_est/"
+        
+        file_name <- paste(distr_link, 
+                           "distr_est_b", 
+                           input$b, ".csv", sep = "")
         alpha <- as.numeric(paste(".", input$alpha, sep = ""))
         dist_keep <- read.csv(file_name)
         
-        bartlett_density <- density(dist_keep$Bartlett)
-        bartlett_lug_density <- density(dist_keep$Bartlett_lug)
+        bartlett_density <- density(dist_keep$Bartlett, from = 0)
+        bartlett_lug_density <- density(dist_keep$Bartlett_lug, from = 0)
         
         # Bartlett Fits (need this for plot bounds)
-        file_name <- paste("Bartlett_", input$alpha, ".csv", sep = "")
+        file_name <- paste(CV_link, 
+                           "Bartlett_", 
+                           input$alpha, ".csv", sep = "")
         bart_table <- read.csv(file_name)
-        bart_fit <- fitted_model(bart_table, alpha_level = 1-alpha)
+        bart_fit <- fitted_model(bart_table, alpha_level = alpha)
         bart_cv <- fitted_value(bart_fit, as.numeric(input$b), alpha)
         
         # Bartlett Lugsail Fits (need this for plot bounds)
-        file_name <- paste("Bartlett_Lugsail_", input$alpha, ".csv", sep = "")
+        file_name <- paste(CV_link, 
+                           "Bartlett_Lugsail_", 
+                           input$alpha, ".csv", sep = "")
         bart_lug_table <- read.csv(file_name)
-        bart_lug_fit <- fitted_model(bart_lug_table, alpha_level = 1-alpha)
+        bart_lug_fit <- fitted_model(bart_lug_table, alpha_level = (alpha))
         bart_lug_cv <- fitted_value(bart_lug_fit, as.numeric(input$b), alpha)
         
         
@@ -145,7 +166,7 @@ server <- function(input, output) {
              main = "Distribution of Test Statistics", 
              xlab = "X", lwd = 4, ylim = c(0, 1))
         mtext( cex=1, side = 3,
-               "Given: kernel, m")
+               "Given: kernel, m, bandwidth (b)")
         curve(dchisq(x, 1), add = T, lwd = 4, lty = 2)
         lines(bartlett_lug_density, col = "blue", lwd = 4)
         

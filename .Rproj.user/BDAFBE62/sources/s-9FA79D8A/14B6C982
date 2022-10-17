@@ -1,0 +1,23 @@
+{
+    "id": "14B6C982",
+    "path": null,
+    "project_path": null,
+    "type": "r_code_browser",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1665985964806.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "context": ".GlobalEnv:::fitted_model"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 140362945477856,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1665985964806,
+    "read_only": false,
+    "read_only_alternatives": []
+}
