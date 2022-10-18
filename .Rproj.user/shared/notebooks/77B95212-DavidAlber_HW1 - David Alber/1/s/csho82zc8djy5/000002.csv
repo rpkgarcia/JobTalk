@@ -1,0 +1,3 @@
+"0","leng_min = length(LH)-1"
+"0","leng = length(LH)"
+"0","var2 = ((sum(LH^2)-(sum(LH)^2)/leng)/(leng_min))"

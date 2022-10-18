@@ -1,0 +1,2 @@
+"0","arithmetic_mean = sum(LH)/(length(LH))"
+"0","mean_deviate = (sum(abs(LH - arithmetic_mean))/(length(LH)))"

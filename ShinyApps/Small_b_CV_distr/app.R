@@ -92,7 +92,7 @@ server <- function(input, output) {
                                      as.numeric(input$b), alpha)
         bartlett_lug_fit <- fitted_value(fit_bartlett_lug, 
                                          as.numeric(input$b), alpha) 
-        y_max <- max(20, bartlett_fit, bartlett_lug_fit)
+        y_max <- max(10, bartlett_fit, bartlett_lug_fit)
         
         plot(c(0, try_b), 
              c(chisq_cv, fit_bartlett$fitted.values + chisq_cv), 

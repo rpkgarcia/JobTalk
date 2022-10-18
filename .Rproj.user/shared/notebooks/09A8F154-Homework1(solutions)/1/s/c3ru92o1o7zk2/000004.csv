@@ -1,0 +1,6 @@
+"0","mean_dev <- sum(abs(LH - am))/length(LH)"
+"0","mean_dev"
+"1","[1]"
+"1"," 1.058684"
+"1","
+"
