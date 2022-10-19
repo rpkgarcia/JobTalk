@@ -37,6 +37,8 @@ par(mfrow = c(1, 1))
 
 <br>
 
+- <h4>Data comes from normal distribution</h4>
+
 - <h4>Sample sizes are small</h4>
 
 - <h4>We estimate $\sigma$ with $s$ or $\hat{\sigma}$</h4>
@@ -174,17 +176,7 @@ $$
     \end{matrix}
 $$
 
-where $r(\cdot)$ is a $m \geq d$ vector of functions
-
-## Example Data
-
-
-```{r, echo = FALSE, message=F, warning=FALSE}
-shinyAppFile(
-  "ShinyApps/VAR1Process/app.R",
-  options = list(width = "100%", height = 700)
-)
-```
+where $r(\cdot)$ is a $m \geq d$ vector of functions.
 
 ## Test Statistic
 
@@ -217,6 +209,15 @@ $$
 - <h4> May not be positive semi-definite.</h4> 
 
 
+## Example Data
+
+
+```{r, echo = FALSE, message=F, warning=FALSE}
+shinyAppFile(
+  "ShinyApps/VAR1Process/app.R",
+  options = list(width = "100%", height = 700)
+)
+```
 
 ## Current Estimators ^[@newey1986simple]
 
@@ -295,7 +296,7 @@ $$
 ## Lugsail Estimator  ^[@vats2022lugsail]
 
 
-- <h4>Add a positive bias to offset the negative bias of the kernel estimator. </h4>
+- <h4>Offset the negative bias of the kernel estimator. </h4>
 
 - <h4>Tuning parameters: $r$, $c$, kernel function, $b$</h4>
 

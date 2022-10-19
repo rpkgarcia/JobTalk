@@ -42,16 +42,19 @@ ui <- fluidPage(
     fluidRow(column(2), 
              column(4, selectInput("b",
                         "Select b:",
-                        list("0.2" = 0.2,
+                        list("0.05" = 0.05,
                              "0.07" = 0.07,
-                             "value" = 30))
+                             "0.1" = 0.1,
+                             "0.2" = 0.2), 
+                        selected = "0.07")
                     ), 
             column(4, selectInput("alpha",
                         "Select Significance Level:",
                         list("0.01" = "01",
                              "0.025" = "025",
                              "0.05" = "05", 
-                             "0.10" = "10"))
+                             "0.10" = "10"), 
+                        selected = "05")
                    )
     ), 
 
