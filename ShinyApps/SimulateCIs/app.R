@@ -16,7 +16,7 @@ library(MASS)  # for mvnorm
 # needed before app -------------------------------------------------------
 
 # Simulations Settings
-big_T = 1000
+big_T = 200
 rho = .7
 num_sim = 10
 
@@ -124,7 +124,7 @@ bartlett_cv = function(b){
 
 
 # Cov_list should be 
-Make_CIs = function(Cov_list, b, the_means, big_T){
+Make_CIs = function(Cov_list, the_means, big_T){
     
     keep = which(Cov_list$lugsail_est>=0)[1:5]
     keep_means = the_means[keep]
@@ -168,7 +168,7 @@ plot_ci = function(ci){
     
     legend("topleft", 
            c("True Mean", 
-             "True Confidence Interval", 
+             "Oracle Confidence Interval", 
              "Bartlett (fixed b)", 
              "Lugsail (fixed b)"), 
            lty = c(2, 1, 1, 1), 
@@ -193,16 +193,22 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            sliderInput("b_value",
-                        "Choose number of lags (M/T):",
+            sliderInput("b_bart",
+                        "Bartlett - Choose b:",
                         min = 0,
                         max = .5,
-                        value = .032, 
+                        value = 0.1036295, 
                         step = .005), 
+            sliderInput("b_bart_lug",
+                        "Bartlett Lugsail - Choose b:",
+                        min = 0,
+                        max = .5,
+                        value = 0.07327715, 
+                        step = .005),
             numericInput("big_T", 
                          "Choose sample size (T):", 
                          min = 50, max = 10000, 
-                         step = 50, value = 1000),
+                         step = 50, value = 200),
             actionButton("action1", label = "(re)Generate")
         ),
         
@@ -231,7 +237,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     
     observeEvent(input$action1, {
-        b = input$b_value
+       # b = input$b_value
         
         sim_data = replicate(num_sim, generate_data(big_T = input$big_T, 
                                                     rho_y = rho))
@@ -248,12 +254,12 @@ server <- function(input, output) {
         
         bartlett_est = get_estimator(sim_data = sim_data, 
                                      all_autocovariances = all_autocovariances, 
-                                     try_b = b)
+                                     try_b = input$b_bart)
         
         lugsail_est = get_estimator("Lugsail",
                                     sim_data = sim_data, 
                                     all_autocovariances = all_autocovariances, 
-                                    try_b = b)
+                                    try_b = input$b_bart_lug)
         
         Cov_list = list(truth = TRUE_LRV, 
                         bartlett_est = bartlett_est, 
@@ -261,7 +267,7 @@ server <- function(input, output) {
         
         keep = which(Cov_list$lugsail_est>=0)[1:5]
         
-        ci = Make_CIs(Cov_list, b, the_means, big_T)
+        ci = Make_CIs(Cov_list, the_means, big_T)
         
         
         output$ci_plot <- renderPlot({

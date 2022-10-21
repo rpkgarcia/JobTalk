@@ -103,16 +103,16 @@ server <- function(input, output) {
              xlim = c(0, 0.5), ylim = c(0, y_max),
              col = "red", lwd = 4, xlab = "Bandwidth (b)", 
              ylab = "Critical Value", 
-             main = c("CV vs b"))
+             main = c("Critical Values vs Bandwidth (b)"))
         mtext( cex=1, side = 3,
               "Given: kernel, m, significance level (alpha)")
         lines(c(0, try_b), 
               c(chisq_cv, fit_bartlett_lug$fitted.values + chisq_cv), 
               col = "blue", lwd = 4)
         
-        points(x = c(input$b, input$b), 
-               y = c(bartlett_fit,
-                     bartlett_lug_fit))
+        # points(x = c(input$b, input$b), 
+        #        y = c(bartlett_fit,
+        #              bartlett_lug_fit))
         # text(x = c(input$b, input$b), 
         #      y = c(bartlett_fit,
         #            bartlett_lug_fit), 

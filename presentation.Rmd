@@ -33,7 +33,7 @@ par(mfrow = c(1, 1))
 
 ## Brief Review - 1 Sample Test of Means
 
-<h4>However, in practice when we preform **<span style="color:#2D6CC0"> inference procedures </span>** we typically use the $t$-distribution instead of the normal distribution, especially when</h4>
+<h4>However, in practice when we preform **<span style="color:#2D6CC0"> inference procedures </span>** we typically use the $t$-distribution when </h4>
 
 <br>
 
@@ -55,19 +55,24 @@ par(mfrow = c(1, 1))
 ## Brief Review - 1 Sample Test of Means 
 
 
-```{r echo=F, fig.height=5, fig.width=8, fig.align='center'}
+<!-- # ```{r echo=F, fig.height=5, fig.width=8, fig.align='center'} -->
+<!-- #  -->
+<!-- # par(mfrow = c(1, 1)) -->
+<!-- # curve(dnorm(x), from =-4, to =4, ylab = "", lwd = 2,  axes=FALSE, xlab = "") -->
+<!-- # curve(dt(x, df =3), from =-4, to =4, add = T, col = "blue", lwd = 2, lty =2) -->
+<!-- # legend("topright", border = "white", legend = c("Z-distr", "t-distr"),  -->
+<!-- #        lty = c(1, 2), col = c("black", "blue"), lwd = 2, bty = "n") -->
+<!-- # par(mfrow = c(1, 1)) -->
+<!-- # ``` -->
 
-par(mfrow = c(1, 1))
-curve(dnorm(x), from =-4, to =4, ylab = "", lwd = 2,  axes=FALSE, xlab = "")
-curve(dt(x, df =3), from =-4, to =4, add = T, col = "blue", lwd = 2, lty =2)
-legend("topright", border = "white", legend = c("Z-distr", "t-distr"), 
-       lty = c(1, 2), col = c("black", "blue"), lwd = 2, bty = "n")
-par(mfrow = c(1, 1))
+```{r, echo = FALSE, message=F, warning=FALSE}
+shinyAppFile(
+  "ShinyApps/t_approx_z/app.R",
+  options = list(width = "100%", height = 700)
+)
 ```
 
-
-
-## A General Version of This Problem
+## Variance Estimation in a General Setting
 
 - <h4>Dependence structure </h4>
 
@@ -114,7 +119,7 @@ plot1
 
 
 
-## CLT for VAR(p) Processes ^[@zivot2007modeling]
+## CLT for Stationary Stochastic Processes ^[@zivot2007modeling]
 
 
 <h4> Let $Y_t$ be an $d \times 1$ stationary and ergodic multivariate time series with $E(Y_t) = \mu$, then </h4> 
@@ -166,6 +171,7 @@ $$y_t = \theta_0 + u_t$$
 - $y_t$, $\theta_0$, and $u_t$ are all $d \times 1$ vectors 
 
 - $u_t$ is a zero mean random process 
+- $t = 1, \dots, T$
 
 Test:
 
@@ -202,11 +208,11 @@ $$
 
     
     
-- <h4> Infinite variance. </h4> 
+- <h4> Infinite variance </h4> 
 
-- <h4> No stability </h4>
+- <h4> Behaves erratically </h4>
 
-- <h4> May not be positive semi-definite.</h4> 
+- <h4> May not be positive semi-definite</h4> 
 
 
 ## Example Data
@@ -247,20 +253,22 @@ shinyAppFile(
 )
 ```
 
-## Bias of Current Estimators ^[@den199712]
+## Current Estimators ^[@den199712]
 
 $$
  \begin{align*}
-        \Sigma = & \sum_{h = -\infty}^\infty \Gamma(h) & \\
-               \approx & \sum_{h=-(T-1)}^{T-1} \hat{\Gamma}(h) & \text{ Bias 1}\\
-               = & \sum_{h = -\left \lfloor  bT \right \rfloor}^\left \lfloor  bT \right \rfloor \hat{\Gamma}(h) + \sum_{h=-(T-1)}^{-(\left \lfloor  bT \right \rfloor+1)}\hat{\Gamma}(h) + \sum_{h=\left \lfloor  bT \right \rfloor+1}^{T-1}\hat{\Gamma}(h) & \\
-               \approx & \sum_{h = -\left \lfloor  bT \right \rfloor}^\left \lfloor  bT \right \rfloor \hat{\Gamma}(h) + 0 + 0& \text{ Bias 2}\\
-               \approx & \sum_{h=-\left \lfloor  bT \right \rfloor}^{\left \lfloor  bT \right \rfloor} \kappa \left(\frac{h}{\left \lfloor  bT \right \rfloor} \right )\hat{\Gamma}(h) & \text{ Bias 3}
+        \Sigma = & \sum_{h = -\infty}^\infty \Gamma(h)  \\
+               \approx & \sum_{h=-(T-1)}^{T-1} \hat{\Gamma}(h) \\
+               = & \sum_{h = -\left \lfloor  bT \right \rfloor}^\left \lfloor  bT \right \rfloor \hat{\Gamma}(h) + \sum_{h=-(T-1)}^{-(\left \lfloor  bT \right \rfloor+1)}\hat{\Gamma}(h) + \sum_{h=\left \lfloor  bT \right \rfloor+1}^{T-1}\hat{\Gamma}(h) \\
+               \approx & \sum_{h = -\left \lfloor  bT \right \rfloor}^\left \lfloor  bT \right \rfloor \hat{\Gamma}(h) + 0 + 0\\
+               \approx & \sum_{h=-\left \lfloor  bT \right \rfloor}^{\left \lfloor  bT \right \rfloor} \kappa \left(\frac{h}{\left \lfloor  bT \right \rfloor} \right )\hat{\Gamma}(h) 
     \end{align*}
 $$
 
+## Bias and Variance of Current Estimators 
 
-## Kernel Estimators^[@andrews1991heteroskedasticity] {.build}
+
+## Current Estimators^[@andrews1991heteroskedasticity] 
 
 
 
@@ -276,7 +284,7 @@ $$
 
 - <h4> Consistent. </h4>
 
-- <h4> Also called Spectral Variance, Kernel, Newey-West and HAC estimator. </h4>
+- <h4> Called Spectral Variance, Kernel, Newey-West and HAC estimators. </h4>
 
 
 ## Lugsail Estimator 
@@ -513,7 +521,7 @@ shinyAppFile(
 </center>
 <br>
 <br>
-Optimal bandwidth for given set up used. 
+Optimal bandwidth for given set up used. REDO bandwidth [0, 0.5]
 
 ## Summary 
 

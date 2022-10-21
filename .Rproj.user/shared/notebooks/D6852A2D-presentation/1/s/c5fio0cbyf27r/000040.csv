@@ -1,3 +1,0 @@
-"0",""
-"0","par(mfrow = c(1, 1))"
-"0","curve(dnorm(x), from =-4, to =4, ylab = """", lwd = 2,  axes=FALSE, xlab = """")"
