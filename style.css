@@ -91,3 +91,19 @@ th {
   -webkit-column-break-after: always; 
   break-after: column; 
 }
+
+/* Text Box */
+.div2 {  
+  border: 5px solid  #FFB81C;
+  background-color:#ffefcd;
+  box-sizing: border-box;
+  padding: 10px;
+}
+
+.div3 {
+  border-bottom: 6px solid #FFB81C;
+  background-color: #FFB81C;
+  color: black;
+  box-sizing: border-box;
+  padding: 10px;
+}

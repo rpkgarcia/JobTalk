@@ -124,7 +124,7 @@ bartlett_cv = function(b){
 
 
 # Cov_list should be 
-Make_CIs = function(Cov_list, the_means, big_T){
+Make_CIs = function(Cov_list,the_means, big_T, b_bartlett= 0.1036295, b_bartlett_lug = 0.07327715){
     
     keep = which(Cov_list$lugsail_est>=0)[1:5]
     keep_means = the_means[keep]
@@ -135,12 +135,12 @@ Make_CIs = function(Cov_list, the_means, big_T){
     UB_truth = keep_means + sqrt(Cov_list$truth/big_T)*sqrt(qchisq(0.95, 1))
     truth_ci = data.frame(LB= LB_truth, UB= UB_truth)
     
-    LB_bartlett = keep_means - bartlett_est*sqrt(bartlett_cv(b))
-    UB_bartlett = keep_means + bartlett_est*sqrt(bartlett_cv(b))
+    LB_bartlett = keep_means - bartlett_est*sqrt(bartlett_cv(b_bartlett))
+    UB_bartlett = keep_means + bartlett_est*sqrt(bartlett_cv(b_bartlett))
     bartlett_ci = data.frame(LB= LB_bartlett, UB= UB_bartlett)
     
-    LB_lugsail = keep_means - lugsail_est*sqrt(lugsail_cv(b))
-    UB_lugsail = keep_means+ lugsail_est*sqrt(lugsail_cv(b))
+    LB_lugsail = keep_means - lugsail_est*sqrt(lugsail_cv(b_bartlett_lug))
+    UB_lugsail = keep_means+ lugsail_est*sqrt(lugsail_cv(b_bartlett_lug))
     lugsail_ci = data.frame(LB= LB_lugsail, UB= UB_lugsail)
     
     ci = list(truth = truth_ci, bartlett = bartlett_ci, lugsail = lugsail_ci)
@@ -267,7 +267,7 @@ server <- function(input, output) {
         
         keep = which(Cov_list$lugsail_est>=0)[1:5]
         
-        ci = Make_CIs(Cov_list, the_means, big_T)
+        ci = Make_CIs(Cov_list, the_means=the_means, big_T=big_T)
         
         
         output$ci_plot <- renderPlot({

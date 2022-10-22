@@ -188,11 +188,11 @@ where $r(\cdot)$ is a $m \geq d$ vector of functions.
 
 Multivariate 
 
-$$  F_T = \left [ \sqrt{T}\left(\hat{\theta} - \theta_0 \right) \right ]' \hat{\Omega}_T^{-1}\left [ \sqrt{T}\left(\hat{\theta} - \theta_0 \right) \right ]/p$$
+$$  F_T = \left [ \sqrt{T}\left(\hat{\theta} - \theta_0 \right) \right ]' \hat{\Sigma}_T^{-1}\left [ \sqrt{T}\left(\hat{\theta} - \theta_0 \right) \right ]/p$$
 Univariate 
 
 
-$$t = \frac{(\hat{\theta}-\theta_0)}{\sqrt{\hat{\Omega}_T /T}}$$
+$$t = \frac{(\hat{\theta}-\theta_0)}{\sqrt{\hat{\Sigma}_T /T}}$$
 
 ## What is the problem? ^[@priestley1981spectral]
 
@@ -215,16 +215,6 @@ $$
 - <h4> May not be positive semi-definite</h4> 
 
 
-## Example Data
-
-
-```{r, echo = FALSE, message=F, warning=FALSE}
-shinyAppFile(
-  "ShinyApps/VAR1Process/app.R",
-  options = list(width = "100%", height = 700)
-)
-```
-
 ## Current Estimators ^[@newey1986simple]
 
 ```{=latex}
@@ -244,14 +234,6 @@ $$
 \end{align*}
 $$
 
-## Common Kernel Functions
-
-```{r, echo = FALSE, message=F, warning=FALSE}
-shinyAppFile(
-  "ShinyApps/KernelFunctions/app.R",
-  options = list(width = "100%", height = 700)
-)
-```
 
 ## Current Estimators ^[@den199712]
 
@@ -265,16 +247,36 @@ $$
     \end{align*}
 $$
 
-## Bias and Variance of Current Estimators 
+
+## Common Kernel Functions
+
+
+```{r, echo = FALSE, message=F, warning=FALSE}
+shinyAppFile(
+  "ShinyApps/KernelFunctions/app.R",
+  options = list(width = "100%", height = 700)
+)
+```
+
+
+
+## Example Data
+
+
+```{r, echo = FALSE, message=F, warning=FALSE}
+shinyAppFile(
+  "ShinyApps/VAR1Process/app.R",
+  options = list(width = "100%", height = 700)
+)
+```
+
 
 
 ## Current Estimators^[@andrews1991heteroskedasticity] 
 
-
-
 - <h4>Tuning parameters: $b$, kernel function. </h4>
 
-    + <h4>$b$ estimated by AMSE</h4>
+    + <h4>$b$ estimated by AMSE </h4>
     
     + <h4>Several standard kernels recommended. </h4>
 
@@ -286,6 +288,26 @@ $$
 
 - <h4> Called Spectral Variance, Kernel, Newey-West and HAC estimators. </h4>
 
+## Asympototic Bias and Variance
+
+$$\begin{align*}
+      Bias\left (\hat{\Sigma}^{(K)} \right ) = & g_q (bT)^{-q}h_q + o\left ((bt)^{-q} \right) \\
+      Var\left (vec \left (\hat{\Sigma}^{(K)}\right ) \right ) = & \nu (I_{m^2} + K_{mm}) \Sigma \otimes \Sigma + o(b) 
+\end{align*}$$
+        
+        
+where
+
+- $I_{m^2}$ is the $m^2 \times m^2$ identity matrix
+
+- $K_{mm}$ is the $m^2 \times m^2$ commutation matrix
+
+- $\otimes$ is the Kronecker product
+
+- $h_q = tr(m^{-1} \sum_{j=-\infty}^\infty |j|^q \Gamma_j \Sigma^{-1})$, the Parzen generalized derivative 
+- $\nu = \left [\int^\infty_{-\infty} \kappa^2(x) dx \right ]^{-1}$
+
+- $\Rightarrow b^*=0.75T^{-2q/(2q+1)}$
 
 ## Lugsail Estimator 
 
@@ -300,23 +322,13 @@ $$
 </h4>
 
 
+<h4>
 
-## Lugsail Estimator  ^[@vats2022lugsail]
+$$
+\kappa_L \left (x \right ) = \frac{1}{1-c} \kappa \left (x \right) - \frac{c}{1-c}\kappa \left ( xr \right) 
+$$
+</h4>
 
-
-- <h4>Offset the negative bias of the kernel estimator. </h4>
-
-- <h4>Tuning parameters: $r$, $c$, kernel function, $b$</h4>
-
-    + <h4> $r$ and $c$ determined by amount of negative bias suspected
-    
-    + <h4> Standard kernels recommended. </h4>
-
-- <h4> Computationally efficient. </h4>
-
-- <h4>Might not be positive semi-definite. </h4>
-
-- <h4> Consistent. </h4>
 
 
 ## Picking Lugsail Parameters
@@ -364,19 +376,44 @@ shinyAppFile(
 ```
 
 
+## Lugsail Estimator  ^[@vats2022lugsail]
 
-## Picking Lugsail Parameters
+
+- <h4>Offset the negative bias of the kernel estimator. </h4>
+
+- <h4>Tuning parameters: $r$, $c$, kernel function, $b$</h4>
+
+    + <h4> $r$ and $c$ determined by amount of negative bias suspected
+    
+    + <h4> Standard kernels recommended. </h4>
+
+- <h4> Computationally efficient. </h4>
+
+- <h4>Might not be positive semi-definite. </h4>
+
+- <h4> Consistent. </h4>
+
+- <h4> What about $b$?</h4> 
 
 
-- <h4>What about $b$?</h4>
 
-- <h4>AMSE is not feasible </h4>
+## Optimal $b$ for Lugsail and AMSE 
 
-<br>
-<br>
+Let $\kappa$ be the kernel function used for the lugsail estimator, and  $\kappa_L$ the transformed version of the kernel function. 
 
-<h4>$\Rightarrow$ Consider new loss function</h4>
+$$\begin{align*}
+    Bias\left (\hat{\Sigma}^{(L)}\right ) = & \left ( \frac{1-cr^q}{1-c} \right ) g_q (bT)^{-q}h_q + o\left ((bt)^{-q} \right) \\
+    Var\left (vec \left (\hat{\Sigma}^{(L)}\right )\right ) = & \nu_L (I_{m^2} + K_{mm}) \Sigma\otimes \Sigma + o(b) 
+\end{align*}$$
 
+- $I_{m^2}$ is the $m^2 \times m^2$ identity matrix
+
+- $K_{mm}$ is the $m^2 \times m^2$ commutation matrix
+
+- $\otimes$ is the Kronecker product
+
+- $h_q = tr(m^{-1} \sum_{j=-\infty}^\infty |j|^q \Gamma_j \Sigma^{-1})$, the Parzen generalized derivative 
+- $\nu_L = \left [\int^\infty_{-\infty} \kappa_L^2(x) dx \right ]^{-1}$
 
 
 ## Things to consider for an estimator/loss function
@@ -398,7 +435,10 @@ shinyAppFile(
 
 <h4> $\Rightarrow$ Testing Optimal Loss Function </h4>
 
-## Testing Optimal b ^[@sun2014let]
+## Testing Loss Functions 
+
+
+## Testing Optimal $b$ ^[@sun2014let]
 
 $$
 b^* = \text{argmin}\left \{e_{II}(b)\right \}  \text{    ;   s.t. }e_I(b) \leq \tau\alpha 
@@ -409,15 +449,14 @@ where
 -$\tau >1$ 
 
 
--$e_{I}(b) = \alpha - (bT)^{-q}G_m'(\chi^\alpha_m)\chi^\alpha_m \overline{B}$
+-$e_{I}(b) = \alpha - (bT)^{-q}G_m'(\chi^\alpha_m)\chi^\alpha_m h_q$
 
 
--$e_{II}(b) = G_{m, \delta^2}(\chi^\alpha_m) + (bT)^{-q}G'_{m,\delta^2}(\chi^\alpha_m)\chi^\alpha_m \overline{B} + \frac{\delta^2}{2}G'_{(m+2), \delta^2}(\chi^\alpha_m)\chi^\alpha_m c_2 b$
+-$e_{II}(b) = G_{m, \delta^2}(\chi^\alpha_m) + (bT)^{-q}G'_{m,\delta^2}(\chi^\alpha_m)\chi^\alpha_m h_q + \frac{\delta^2}{2}G'_{(m+2), \delta^2}(\chi^\alpha_m)\chi^\alpha_m \nu b$
 
--$\overline{B} = tr\{B\Sigma^{-1}\}/p$
+-$\delta^2$ such that $P(\zeta\leq \chi^\alpha_m) = 0.75$ where $\zeta \sim \chi^2_m(\delta^2)$
 
 
--$B=-g_q\sum_{h=\infty}^\infty |h|^qEu_tu_{t-h}'$
 
 <h4>***We are using fixed-$b$ critical values***</h4>
 
@@ -496,13 +535,17 @@ shinyAppFile(
 
 ## Optimal $b$
 
+<div class= "div3"> Theorem</div>
+
+<div class="div2">
+The testing optimal bandwidth lugsail estimators and positive semi-definite kernel functions
 $$
-b = \begin{cases}
-\left [\frac{2qG'_{m, \delta^2}(\chi^\alpha_m)|\overline{B}|)}{\delta^2 G'_{m+2, \delta^2} (\chi^\alpha_m)c_2} \right ]^{1/(q+1)} T^{-q/(q+1)}& \text{ if } \overline{B}>0 \\ 
-\left[\frac{G'_m(\chi^\alpha_m)\chi^\alpha_m |\overline{B}|}{(\tau -1)\alpha)} \right ]^{1/q}\frac{1}{T} & \text{ if } \overline{B}\leq 0 
+b^* = \begin{cases}
+\left [\frac{2qG'_{m, \delta^2}(\chi^\alpha_m)|h_q|)}{\delta^2 G'_{m+2, \delta^2} (\chi^\alpha_m)\nu} \right ]^{1/(q+1)} T^{-q/(q+1)}& \text{ if } h_q>0 \\ 
+\left[\frac{G'_m(\chi^\alpha_m)\chi^\alpha_m |h_q|}{(\tau -1)\alpha} \right ]^{1/q}\frac{1}{T} & \text{ if } h_q\leq 0 
 \end{cases}
 $$
-
+</div>
 
 ## Mini Simulation 
 
@@ -517,11 +560,11 @@ shinyAppFile(
 ## Size Distortion and Power
 
 <center>
-![](images/size.png){width=45%}  ![](images/power.png){width=45%} 
+![](images/SizePower/size2.png){width=45%}  ![](images/SizePower/power2.png){width=45%} 
 </center>
 <br>
 <br>
-Optimal bandwidth for given set up used. REDO bandwidth [0, 0.5]
+Optimal bandwidth for given set up used.
 
 ## Summary 
 
